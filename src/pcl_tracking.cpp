@@ -1,79 +1,85 @@
 #include "pcl_tracking.hpp"
-#define N_THREADS 4
+
 using namespace pcl::tracking;
 
 void BaseTracker::setDownsampleSize(float size) {
     this->downsampleGridSize = size; 
 }
 
-void BaseTracker::setUpTracking(std::string modelLoc, int numParticles, double variance, bool KLD) {
-    Particle binSize; 
-    binSize.x = binSize.y = binSize.z = binSize.roll = binSize.yaw = binSize.pitch = 0.045f; 
+void BaseTracker::initializeKLDFilter(float binSize, int numParticles, float delta, float epsilon) {
+    this->delta = delta;
+    this->epsilon = epsilon;
 
-    // Define the KLD Filter: 
-    // Adapts the number of particles used and finds coefficients in parallel
-    pcl::tracking::KLDAdaptiveParticleFilterOMPTracker<RefPointType, Particle>::Ptr kldFilter (new pcl::tracking::KLDAdaptiveParticleFilterOMPTracker<RefPointType, Particle> (N_THREADS));
+    // Initialise KLD Filter
+    KLDAdaptiveParticleFilterOMPTracker<RefPointType, Particle>::Ptr kldFilter (new KLDAdaptiveParticleFilterOMPTracker<RefPointType, Particle> (N_THREADS));
 
-    // KLD parameters used when resampling from Gaussian for new particles
-    std::vector<double> initialNoiseMean = std::vector<double>(6, 0.0);
-    std::vector<double> initialNoiseCovariance = std::vector<double>(6, 0.00001);
-
-    std::vector<double> defaultStepCovariance = std::vector<double>(6, 0.015 * 0.015); 
-    defaultStepCovariance[3] *= 40.0; 
-    defaultStepCovariance[4] *= 40.0; 
-    defaultStepCovariance[5] *= 40.0; 
+    // Parameters when resampling new particles
+    kldFilter->setInitialNoiseCovariance(initialNoiseCovariance);
+    kldFilter->setInitialNoiseMean(initialNoiseMean);
+    kldFilter->setStepNoiseCovariance(defaultStepCovariance);
 
     // Meta-parameters for KLD sampling algorithm
-    kldFilter->setMaximumParticleNum(numParticles); 
-    kldFilter->setDelta(0.99); 
-    kldFilter->setEpsilon(0.2);
-    kldFilter->setBinSize(binSize);
+    Particle bin;
+    bin.x = bin.y = bin.z = bin.roll = bin.yaw = bin.pitch = binSize;
+
+    kldFilter->setMaximumParticleNum(numParticles);
+    kldFilter->setDelta(this->delta);
+    kldFilter->setEpsilon(this->epsilon);
+    kldFilter->setBinSize(bin);
+
+    // Parameters for KLD in each iteration
+    kldFilter->setIterationNum(1);
+    kldFilter->setParticleNum(numParticles);
+    kldFilter->setResampleLikelihoodThr(0.0);
+    kldFilter->setUseNormal(false);
+
+    // Set tracker to be the KLD Filter
+    this->tracker = kldFilter;
+}
+
+void BaseTracker::setUpTracking(const std::string& modelLoc,
+                                int numParticles,
+                                double variance,
+                                float delta,
+                                float epsilon,
+                                float binSizeDimensions) {
+    // Initialize the KLD Filter
+    this->initializeKLDFilter(binSizeDimensions, numParticles, delta, epsilon);
 
     // Set up coherence for point cloud tracking 
     ApproxNearestPairPointCloudCoherence<RefPointType>::Ptr coherence (new ApproxNearestPairPointCloudCoherence<RefPointType>);
     DistanceCoherence<RefPointType>::Ptr distCoherence (new DistanceCoherence<RefPointType>);
     coherence->addPointCoherence(distCoherence); 
 
-    // Octree class for nearest neighbour search operations 
+    // Octree class for nearest neighbour search
     pcl::search::Octree<RefPointType>::Ptr search (new pcl::search::Octree<RefPointType> (COHERENCE_LIMIT)); 
     coherence->setSearchMethod(search); 
     coherence->setMaximumDistance(COHERENCE_LIMIT); 
 
-    // Set up point cloud for tracking 
+    // Get target cloud
     pcl::PointCloud<RefPointType>::Ptr objectModel (new pcl::PointCloud<RefPointType>());
     if(pcl::io::loadPCDFile<pcl::PointXYZRGBA>(modelLoc, *objectModel) == -1) {
         std::cout << "File " << modelLoc << " could not be found" << std::endl;
         exit(-1);
     }
+    this->objectCloud = objectModel;
 
-    // TODO: check what this is doing exactly
-    // Prepare the model of the tracker's target 
+    // Prepare the model of the tracker's target
     Eigen::Vector4f objectCentroid; 
-    Eigen::Affine3f translateModel = Eigen::Affine3f::Identity(); 
-    
+    Eigen::Affine3f translateModel = Eigen::Affine3f::Identity();
     pcl::compute3DCentroid<RefPointType>(*objectModel, objectCentroid); 
     translateModel.translation().matrix() = Eigen::Vector3f(objectCentroid[0], objectCentroid[1], objectCentroid[2]);
     pcl::transformPointCloud<RefPointType>(*objectModel, *objectModel, translateModel.inverse()); 
 
+    // Downsample the target cloud
     pcl::PointCloud<RefPointType>::Ptr transformedDownCloud(new pcl::PointCloud<RefPointType>); 
     this->downSampleGrid.setInputCloud(objectModel); 
     this->downSampleGrid.setLeafSize(this->downsampleGridSize, this->downsampleGridSize, this->downsampleGridSize); 
     this->downSampleGrid.filter(*transformedDownCloud); 
 
     // Set params for KLD Filter 
-    kldFilter->setInitialNoiseCovariance(initialNoiseCovariance); 
-    kldFilter->setInitialNoiseMean(initialNoiseMean);
-    kldFilter->setStepNoiseCovariance(defaultStepCovariance);
-    kldFilter->setIterationNum(1); 
-    kldFilter->setParticleNum(numParticles); 
-    kldFilter->setResampleLikelihoodThr(0.0);
-    kldFilter->setUseNormal(false); 
-    kldFilter->setCloudCoherence(coherence); 
-    kldFilter->setTrans(translateModel); 
-    kldFilter->setReferenceCloud(transformedDownCloud);
-
-    // Set tracker to be the KLD Filter
-    this->tracker = kldFilter; 
+    this->tracker->setTrans(translateModel);
+    this->tracker->setReferenceCloud(transformedDownCloud);
 }
 
 // Removes the cloud of the floor from the cloud of the object
@@ -97,19 +103,18 @@ void BaseTracker::runRANSAC(const pcl::PointCloud<RefPointType>::ConstPtr &cloud
 void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &cloud) {
     // Ignore first 10 frames because of noise 
     if (this->frameCount < 10) {
-        this->frameCount++; 
-        return; 
+        this->frameCount++;
+        return;
     }
-    // Run RANSAC for segmentation, only if fewer than 11 frames
-    // May be unnecessary if no floor plane exists
-    if (frameCount < 11) {
-        this->runRANSAC(cloud); 
-    }
+//    // Run RANSAC for segmentation, only if fewer than 11 frames
+//    // May be unnecessary if no floor plane exists
+//    if (frameCount < 11) {
+//        this->runRANSAC(cloud);
+//    }
 
-    // Set the target cloud 
-    Eigen::Matrix4f identity = Eigen::Matrix4f::Identity(); 
-    pcl::transformPointCloud(*cloud, *this->objectCloud, identity); 
-    //this->objectCloud = cloud; 
+    // Set the target cloud, no transformation needed in this case
+    Eigen::Matrix4f identity = Eigen::Matrix4f::Identity();
+    pcl::transformPointCloud(*cloud, *this->objectCloud, identity);
 
     // Filter along a specified dimension,
     // This limits what is kept for tracking, removes corner points we don't care about.      
@@ -117,16 +122,17 @@ void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &c
     pass.setFilterFieldName("z");
     pass.setFilterLimits(0.0, 10.0); // how to determine these limits?
     pass.setInputCloud(this->objectCloud);
-    pass.filter(*this->objectCloud); 
+    pass.filter(*this->objectCloud);
 
-    // Downsampling 
+    // Down sampling
     this->downSampleGrid.setInputCloud(this->objectCloud); 
     this->downSampleGrid.filter(*this->objectCloud);
 
     // Update the cloud being tracked 
     this->trackingMutex.lock();
     this->tracker->setInputCloud(this->objectCloud); 
-    this->trackingMutex.unlock(); 
+    this->trackingMutex.unlock();
+    this->frameCount++;
 }
 
 void BaseTracker::tracking() {
@@ -169,8 +175,17 @@ void VirtualCamera::startCameraListener(bool video, bool save) {
     std::cout << "Add saving flag here later." << std::endl; 
 }
 
-void VirtualCamera::setUpCamera(std::string modelLoc, int numParticles, double variance, bool kld, bool save, std::string resultLoc) {
-    this->setUpTracking(modelLoc, numParticles, variance, kld); 
+void VirtualCamera::setUpCamera(std::string modelLoc,
+                                int numParticles,
+                                double variance,
+                                float delta,
+                                float epsilon,
+                                float binSize,
+                                bool save,
+                                std::string resultLoc)
+                                {
+    this->setUpTracking(modelLoc, numParticles, variance, delta, epsilon, binSize);
+
     this->setUpCameraListener(resultLoc); 
     // useless call
     this->startCameraListener(true, true); 
