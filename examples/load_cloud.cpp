@@ -4,9 +4,9 @@
 
 
 int main() {
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
 
-    if (pcl::io::loadPCDFile<pcl::PointXYZ> ("../data/frame_" + std::to_string(0) + ".pcd", *cloud) == -1) {
+    if (pcl::io::loadPCDFile<pcl::PointXYZRGBA> ("../data/frame_" + std::to_string(0) + ".pcd", *cloud) == -1) {
         PCL_ERROR ("Could read PCD file \n"); 
         return -1; 
     }

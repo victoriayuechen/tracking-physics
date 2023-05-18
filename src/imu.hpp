@@ -1,7 +1,10 @@
 #include <array>
 
 struct Quaternion {
-    
+    double r; 
+    double i; 
+    double j; 
+    double k; 
 }; 
 
 class IMU {

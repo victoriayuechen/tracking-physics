@@ -1,11 +1,12 @@
 #include "pcl_tracking.hpp"
-#define N_THREADS = 4
+#define N_THREADS 4
+using namespace pcl::tracking;
 
-void Tracker::setDownsampleSize(float size) {
+void BaseTracker::setDownsampleSize(float size) {
     this->downsampleGridSize = size; 
 }
 
-void Tracker::setUpTracking(std::string modelLoc, int numParticles, double variance, bool KLD) {
+void BaseTracker::setUpTracking(std::string modelLoc, int numParticles, double variance, bool KLD) {
     Particle binSize; 
     binSize.x = binSize.y = binSize.z = binSize.roll = binSize.yaw = binSize.pitch = 0.045f; 
 
@@ -40,7 +41,7 @@ void Tracker::setUpTracking(std::string modelLoc, int numParticles, double varia
 
     // Set up point cloud for tracking 
     pcl::PointCloud<RefPointType>::Ptr objectModel (new pcl::PointCloud<RefPointType>());
-    if(pcl::io::loadPCDFile (modelLoc, *objectModel) == -1) {
+    if(pcl::io::loadPCDFile<pcl::PointXYZRGBA>(modelLoc, *objectModel) == -1) {
         std::cout << "File " << modelLoc << " could not be found" << std::endl;
         exit(-1);
     }
@@ -50,14 +51,14 @@ void Tracker::setUpTracking(std::string modelLoc, int numParticles, double varia
     Eigen::Vector4f objectCentroid; 
     Eigen::Affine3f translateModel = Eigen::Affine3f::Identity(); 
     
-    pcl::compute3DCentroid<RefPointType> (*objectModel, objectCentroid); 
+    pcl::compute3DCentroid<RefPointType>(*objectModel, objectCentroid); 
     translateModel.translation().matrix() = Eigen::Vector3f(objectCentroid[0], objectCentroid[1], objectCentroid[2]);
-    pcl::transformPointCloud<RefPointType> (*objectModel, *objectModel, translateModel.inverse()); 
+    pcl::transformPointCloud<RefPointType>(*objectModel, *objectModel, translateModel.inverse()); 
 
-    pcl::PointCloud<RefPointType>::Ptr transformedDownCloud (new pcl::PointCloud<RefPointType>); 
+    pcl::PointCloud<RefPointType>::Ptr transformedDownCloud(new pcl::PointCloud<RefPointType>); 
     this->downSampleGrid.setInputCloud(objectModel); 
     this->downSampleGrid.setLeafSize(this->downsampleGridSize, this->downsampleGridSize, this->downsampleGridSize); 
-    this->downsampleGrid.filter(*transformedDownCloud); 
+    this->downSampleGrid.filter(*transformedDownCloud); 
 
     // Set params for KLD Filter 
     kldFilter->setInitialNoiseCovariance(initialNoiseCovariance); 
@@ -76,7 +77,7 @@ void Tracker::setUpTracking(std::string modelLoc, int numParticles, double varia
 }
 
 // Removes the cloud of the floor from the cloud of the object
-void Tracker::runRANSAC(const pcl::PointCloud<RefPointType>::ConstPtr &cloud) {
+void BaseTracker::runRANSAC(const pcl::PointCloud<RefPointType>::ConstPtr &cloud) {
     this->floorPoints.reset(new pcl::PointIndices);
     this->floorCoefficients.reset(new pcl::ModelCoefficients); 
     this->floorSegmentation.setOptimizeCoefficients(true); 
@@ -93,7 +94,7 @@ void Tracker::runRANSAC(const pcl::PointCloud<RefPointType>::ConstPtr &cloud) {
     this->floorObjectSegment.filter(*this->floorCloud);
 }
 
-void Tracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &cloud) {
+void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &cloud) {
     // Ignore first 10 frames because of noise 
     if (this->frameCount < 10) {
         this->frameCount++; 
@@ -106,7 +107,9 @@ void Tracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &cloud
     }
 
     // Set the target cloud 
-    this->objectCloud = cloud; 
+    Eigen::Matrix4f identity = Eigen::Matrix4f::Identity(); 
+    pcl::transformPointCloud(*cloud, *this->objectCloud, identity); 
+    //this->objectCloud = cloud; 
 
     // Filter along a specified dimension,
     // This limits what is kept for tracking, removes corner points we don't care about.      
@@ -114,11 +117,11 @@ void Tracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &cloud
     pass.setFilterFieldName("z");
     pass.setFilterLimits(0.0, 10.0); // how to determine these limits?
     pass.setInputCloud(this->objectCloud);
-    pass.filter(this->objectCloud); 
+    pass.filter(*this->objectCloud); 
 
     // Downsampling 
     this->downSampleGrid.setInputCloud(this->objectCloud); 
-    this->downSampleGrid.filter(this->objectCloud);
+    this->downSampleGrid.filter(*this->objectCloud);
 
     // Update the cloud being tracked 
     this->trackingMutex.lock();
@@ -126,7 +129,7 @@ void Tracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &cloud
     this->trackingMutex.unlock(); 
 }
 
-void Tracker::tracking() {
+void BaseTracker::tracking() {
     if (this->frameCount < 11) {
         std::this_thread::sleep_for(0.03s); 
     }
@@ -143,15 +146,15 @@ void Tracker::tracking() {
     this->trackingMutex.unlock(); 
 }
 
-std::array<double, 6> Tracker::getDOF() {
+std::array<double, 6> BaseTracker::getDOF() {
     return this->dof; 
 }
 
-void Tracker::savePointCloud(const pcl::PointCloud<RefPointType>::ConstPtr &cloud) {
-    pcl::io::savePCDFileASCII ("pcl_frame_" + this->frameCount + ".pcd", cloud);
+void BaseTracker::savePointCloud() {
+    pcl::io::savePCDFileASCII("pcl_frame_" + std::to_string(this->frameCount) + ".pcd", *this->objectCloud);
 }
 
-void Tracker::incrementFrame() {
+void BaseTracker::incrementFrame() {
     this->frameCount++; 
 }
 

@@ -1,28 +1,25 @@
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl/io/openni_grabber.h>
-#include <pcl/common/centroid.h>
-#include <pcl/common/transforms.h> // for transformPointCloud
-
-#include <pcl/visualization/cloud_viewer.h>
-#include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/io/pcd_io.h>
-
-#include <pcl/filters/passthrough.h>
-#include <pcl/filters/approximate_voxel_grid.h>
-
-#include <pcl/tracking/tracking.h>
-#include <pcl/tracking/particle_filter.h>
-#include <pcl/tracking/kld_adaptive_particle_filter_omp.h>
-#include <pcl/tracking/particle_filter_omp.h>
-#include <pcl/tracking/coherence.h>
-#include <pcl/tracking/distance_coherence.h>
-#include <pcl/tracking/approx_nearest_pair_point_cloud_coherence.h>
-#include <pcl/tracking/nearest_pair_point_cloud_coherence.h>
-
-#include <boost/format.hpp>
 #include <mutex>
 #include <thread>
+#include <fstream>
+#include <ostream>
+#include <stdio.h>
+
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl/common/centroid.h>
+#include <pcl/common/transforms.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/features/normal_3d_omp.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/approximate_voxel_grid.h>
+#include <pcl/tracking/tracking.h>
+#include <pcl/tracking/coherence.h>
+#include <pcl/tracking/distance_coherence.h>
+#include <pcl/tracking/particle_filter_omp.h>
+#include <pcl/tracking/kld_adaptive_particle_filter_omp.h>
+#include <pcl/tracking/approx_nearest_pair_point_cloud_coherence.h>
+#include <pcl/segmentation/sac_segmentation.h>
 
 #define DATA_PATH = "../data/frame_"
 #define SENSOR_FROM_CENTER_Y -0.52
@@ -31,12 +28,11 @@
 #define INITIAL_NOISE_MEAN 0.0
 #define COHERENCE_LIMIT 0.01
 
-// using namespace pcl::tracking;
 using namespace std::chrono_literals;
-typedef pcl::PointXYZ RefPointType; // actual type of the points in cloud
-typedef pcl::tracking::PointXYZRPY Particle;  // type of the points that will be used in tracking 
+typedef pcl::PointXYZRGBA RefPointType; // actual type of the points in cloud
+typedef pcl::tracking::ParticleXYZRPY Particle;  // type of the points that will be used in tracking 
 
-class Tracker {
+class BaseTracker {
     protected: 
         // Parameters for filter 
         float downsampleGridSize; 
@@ -70,26 +66,26 @@ class Tracker {
         // Not sure what this method would be for. 
         // void setThreadTracking(); // SetThreadTracking
 
-        void savePointCloud(const pcl::PointCloud<RefPointType>::ConstPtr &cloud); 
+        void savePointCloud(); 
         void runRANSAC(const pcl::PointCloud<RefPointType>::ConstPtr &cloud);
     public:
         // For managing the video frames 
-        long frameCount = 0L; 
+        long frameCount = 9L; 
         long frameMax; 
          
         void cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &cloud);
         std::array<double, 6> getDOF(); 
         void setDownsampleSize(float size); 
         void incrementFrame(); 
-}
+};
 
-class VirtualCamera : public Tracker {
+class VirtualCamera : public BaseTracker {
     private: 
-        pcl::Grabber* kinectDataGrabber;
         std::string dataPath; 
         void setUpCameraListener(std::string videoLoc); 
         void startCameraListener(bool video, bool save); 
     public:
+        VirtualCamera() {}
         void setUpCamera(std::string modelLoc, int numParticles, double variance, bool kld, bool save, std::string resultLoc); 
         void stopCameraListener(bool video);
-}
+};
