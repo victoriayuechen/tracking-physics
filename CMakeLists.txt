@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 project(tracking-physics)
-find_package(PCL 1.10 REQUIRED COMPONENTS common io)
+find_package(PCL 1.10 REQUIRED)
 
 include_directories(${PCL_INCLUDE_DIRS}
+                    ${PROJECT_SOURCE_DIR}/include
                     ${PROJECT_SOURCE_DIR}/src)
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
