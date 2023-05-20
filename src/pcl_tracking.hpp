@@ -29,6 +29,7 @@
 using namespace std::chrono_literals;
 typedef pcl::PointXYZRGBA RefPointType; // actual type of the points in cloud
 typedef pcl::tracking::ParticleXYZRPY Particle;  // type of the points that will be used in tracking 
+typedef pcl::tracking::ParticleFilterTracker<RefPointType, Particle> ParticleFilter;
 
 class BaseTracker {
 private:

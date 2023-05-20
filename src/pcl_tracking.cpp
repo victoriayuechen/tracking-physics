@@ -62,6 +62,7 @@ void BaseTracker::setUpTracking(const std::string& modelLoc,
     ApproxNearestPairPointCloudCoherence<RefPointType>::Ptr coherence (new ApproxNearestPairPointCloudCoherence<RefPointType>);
     DistanceCoherence<RefPointType>::Ptr distCoherence (new DistanceCoherence<RefPointType>);
     pcl::search::Octree<RefPointType>::Ptr search (new pcl::search::Octree<RefPointType> (COHERENCE_LIMIT));
+    // This came before initializing the octree, but order probably shouldn't matter
     coherence->addPointCoherence(distCoherence);
     coherence->setSearchMethod(search);
     coherence->setMaximumDistance(COHERENCE_LIMIT); 
@@ -87,10 +88,10 @@ void BaseTracker::setUpTracking(const std::string& modelLoc,
     this->downSampleGrid.setLeafSize(this->downsampleGridSize, this->downsampleGridSize, this->downsampleGridSize); 
     this->downSampleGrid.filter(*transformedDownCloud); 
 
-    // Set params for KLD Filter 
+    // Set params for KLD Filter
+    this->tracker->setCloudCoherence(coherence);
     this->tracker->setTrans(translateModel);
     this->tracker->setReferenceCloud(transformedDownCloud);
-    this->tracker->setCloudCoherence(coherence);
 }
 
 // Removes the cloud of the floor from the cloud of the object
@@ -123,29 +124,36 @@ void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &c
     pcl::transformPointCloud(*cloud, *this->objectCloud, identity);
 
     // Filter along a specified dimension
+    // TODO: define specific bounding box in which this object exists
     pcl::PassThrough<RefPointType> pass;
     pass.setFilterFieldName("z");
-    pass.setFilterLimits(0.0, 10.0); // how to determine these limits?
+    pass.setFilterLimits(-10, 10.0); // how to determine these limits?
     pass.setInputCloud(this->objectCloud);
     pass.filter(*this->objectCloud);
 
     // Down sampling
-    this->downSampleGrid.setInputCloud(this->objectCloud); 
+    this->downSampleGrid.setInputCloud(this->objectCloud);
     this->downSampleGrid.filter(*this->objectCloud);
 
     // Update the cloud being tracked 
     this->tracker->setInputCloud(this->objectCloud);
-    this->frameCount++;
 
     // Save the output if necessary
     if (this->save) {
         savePointCloud();
     }
+
+    this->frameCount++;
 }
 
 // Saves the point cloud
 void BaseTracker::savePointCloud() {
-    pcl::io::savePCDFileASCII(outputDir + std::to_string(this->frameCount) + ".pcd", *this->objectCloud);
+    Particle state = this->tracker->getResult();
+    {
+        std::cout << "Frame " << this->frameCount << " : " << state.x << " " << state.y << " " << state.z << std::endl;
+    }
+
+   //pcl::io::savePCDFileASCII(outputDir + std::to_string(this->frameCount) + ".pcd", *this->objectCloud);
 }
 
 void VirtualCamera::incrementFrame() {
