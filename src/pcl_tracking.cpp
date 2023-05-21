@@ -1,6 +1,7 @@
 #include "pcl_tracking.hpp"
 using namespace pcl::tracking;
 std::mutex mtx_;
+
 void BaseTracker::setDownsampleSize(float size) {
     this->downsampleGridSize = size; 
 }
@@ -9,9 +10,17 @@ void BaseTracker::setMaxFrame(long maxFrame) {
     this->frameMax = maxFrame;
 }
 
+void BaseTracker::downSample() {
+    // Down sample the cloud
+    pcl::ApproximateVoxelGrid<RefPointType> grid;
+    grid.setLeafSize(downsampleGridSize, downsampleGridSize, downsampleGridSize);
+    grid.setInputCloud(this->objectCloud);
+    grid.filter(*this->objectCloud);
+}
+
 // Creates the vector of step covariances, according to the 6 DOF
 std::vector<double> getStepNoiseCovariance(double variance) {
-    double covariance = variance * variance;
+    double covariance = variance * 1;
     std::vector<double> defaultStepCovariance = std::vector<double>(6, covariance);
     defaultStepCovariance[3] *= 40;
     defaultStepCovariance[4] *= 40;
@@ -87,9 +96,7 @@ void BaseTracker::setUpTracking(const std::string& modelLoc,
     pcl::transformPointCloud<RefPointType>(*this->objectCloud, *this->objectCloud, translateModel.inverse());
 
     // Downsample the target cloud
-    this->downSampleGrid.setInputCloud(this->objectCloud);
-    this->downSampleGrid.setLeafSize(this->downsampleGridSize, this->downsampleGridSize, this->downsampleGridSize);
-    this->downSampleGrid.filter(*this->objectCloud);
+    // downSample();
 
     // Set params for KLD Filter
     this->tracker->setCloudCoherence(coherence);
@@ -122,27 +129,22 @@ void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &c
     }
 
     std::lock_guard<std::mutex> lock (mtx_);
-
     this->objectCloud.reset(new pcl::PointCloud<RefPointType>());
 
     // Set the target cloud, only identity transformation needed (for now)
     Eigen::Matrix4f identity = Eigen::Matrix4f::Identity();
     pcl::transformPointCloud(*cloud, *this->objectCloud, identity);
-
     this->tracker->getCloudCoherence()->setTargetCloud(this->objectCloud);
 
     // Filter along a specified dimension
     pcl::PassThrough<RefPointType> pass;
     pass.setFilterFieldName("z");
-    pass.setFilterLimits(-10, 10.0);
+    pass.setFilterLimits(-10.0f, 10.0f);
     pass.setInputCloud(this->objectCloud);
     pass.filter(*this->objectCloud);
 
     // Down sampling
-    pcl::ApproximateVoxelGrid<RefPointType> grid;
-    grid.setLeafSize(downsampleGridSize, downsampleGridSize, downsampleGridSize);
-    grid.setInputCloud(this->objectCloud);
-    grid.filter(*this->objectCloud);
+   /// downSample();
 
     // Update the cloud being tracked 
     this->tracker->setInputCloud(this->objectCloud);

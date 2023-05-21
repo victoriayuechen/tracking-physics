@@ -3,7 +3,7 @@
 int main() {
     // Variables used for tracker
     float downSampleSize = 0.0002f;
-    int particleCount = 50;
+    int particleCount = 1000;
     double variance = 0.015;
     float delta = 0.99f;
     float epsilon = 0.02f;
