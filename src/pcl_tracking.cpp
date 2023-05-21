@@ -118,9 +118,9 @@ void BaseTracker::runRANSAC(const pcl::PointCloud<RefPointType>::ConstPtr &cloud
 
 void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &cloud) {
     // Run RANSAC for segmentation, do only once
-//    if (this->frameCount < 2) {
-//        this->runRANSAC(cloud);
-//    }
+    if (this->frameCount < 2) {
+        this->runRANSAC(cloud);
+    }
 
     std::lock_guard<std::mutex> lock (mtx_);
 

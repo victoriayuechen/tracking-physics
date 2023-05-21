@@ -12,7 +12,7 @@ int main() {
     std::string resultDir = "../data/output/output_cloud_";
 
     // Maximum number of frames that are processed
-    long maxFrames = 37;
+    long maxFrames = 20;
 
     // Start up the tracker
     VirtualCamera tracker = VirtualCamera();
