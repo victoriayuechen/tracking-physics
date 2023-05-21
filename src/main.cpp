@@ -3,16 +3,16 @@
 int main() {
     // Variables used for tracker
     float downSampleSize = 0.0002f;
-    int particleCount = 100;
+    int particleCount = 50;
     double variance = 0.015;
     float delta = 0.99f;
     float epsilon = 0.02f;
-    float binSize = 0.01f;
-    bool save = true;
+    float binSize = 0.001f;
+    bool save = false;
     std::string resultDir = "../data/output/output_cloud_";
 
     // Maximum number of frames that are processed
-    long maxFrames = 40;
+    long maxFrames = 37;
 
     // Start up the tracker
     VirtualCamera tracker = VirtualCamera();
@@ -29,8 +29,7 @@ int main() {
             PCL_ERROR ("Could read PCD file \n"); 
             return -1; 
         }
-        std::cout << "Iteration in while loop " << tracker.frameCount << std::endl;
-        tracker.cloudCallBack(cloud); 
+        tracker.cloudCallBack(cloud);
     }
 
     return 0;

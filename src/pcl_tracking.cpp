@@ -1,8 +1,12 @@
 #include "pcl_tracking.hpp"
 using namespace pcl::tracking;
-
+std::mutex mtx_;
 void BaseTracker::setDownsampleSize(float size) {
     this->downsampleGridSize = size; 
+}
+
+void BaseTracker::setMaxFrame(long maxFrame) {
+    this->frameMax = maxFrame;
 }
 
 // Creates the vector of step covariances, according to the 6 DOF
@@ -58,15 +62,6 @@ void BaseTracker::setUpTracking(const std::string& modelLoc,
     // Initialize the KLD Filter
     this->initializeKLDFilter(binSizeDimensions, numParticles, variance, delta, epsilon);
 
-    // Set up coherence for point cloud tracking 
-    ApproxNearestPairPointCloudCoherence<RefPointType>::Ptr coherence (new ApproxNearestPairPointCloudCoherence<RefPointType>);
-    DistanceCoherence<RefPointType>::Ptr distCoherence (new DistanceCoherence<RefPointType>);
-    pcl::search::Octree<RefPointType>::Ptr search (new pcl::search::Octree<RefPointType> (COHERENCE_LIMIT));
-    // This came before initializing the octree, but order probably shouldn't matter
-    coherence->addPointCoherence(distCoherence);
-    coherence->setSearchMethod(search);
-    coherence->setMaximumDistance(COHERENCE_LIMIT); 
-
     // Get the initial target cloud
     pcl::PointCloud<RefPointType>::Ptr initModel (new pcl::PointCloud<RefPointType>());
     if(pcl::io::loadPCDFile<pcl::PointXYZRGBA>(modelLoc, *initModel) == -1) {
@@ -74,6 +69,15 @@ void BaseTracker::setUpTracking(const std::string& modelLoc,
         exit(-1);
     }
     this->objectCloud = initModel;
+
+    // Set up coherence for point cloud tracking
+    ApproxNearestPairPointCloudCoherence<RefPointType>::Ptr coherence (new ApproxNearestPairPointCloudCoherence<RefPointType>);
+    DistanceCoherence<RefPointType>::Ptr distCoherence (new DistanceCoherence<RefPointType>);
+    pcl::search::Octree<RefPointType>::Ptr search (new pcl::search::Octree<RefPointType> (COHERENCE_LIMIT));
+    coherence->setTargetCloud(this->objectCloud);
+    coherence->addPointCoherence(distCoherence);
+    coherence->setSearchMethod(search);
+    coherence->setMaximumDistance(COHERENCE_LIMIT);
 
     // Prepare the model of the tracker's target
     Eigen::Vector4f objectCentroid; 
@@ -113,30 +117,37 @@ void BaseTracker::runRANSAC(const pcl::PointCloud<RefPointType>::ConstPtr &cloud
 }
 
 void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &cloud) {
-//    // Run RANSAC for segmentation, do only once
-//    // May be unnecessary if no floor plane exists
-//    if (frameCount < 2) {
+    // Run RANSAC for segmentation, do only once
+//    if (this->frameCount < 2) {
 //        this->runRANSAC(cloud);
 //    }
+
+    std::lock_guard<std::mutex> lock (mtx_);
+
+    this->objectCloud.reset(new pcl::PointCloud<RefPointType>());
 
     // Set the target cloud, only identity transformation needed (for now)
     Eigen::Matrix4f identity = Eigen::Matrix4f::Identity();
     pcl::transformPointCloud(*cloud, *this->objectCloud, identity);
 
+    this->tracker->getCloudCoherence()->setTargetCloud(this->objectCloud);
+
     // Filter along a specified dimension
-    // TODO: define specific bounding box in which this object exists
     pcl::PassThrough<RefPointType> pass;
     pass.setFilterFieldName("z");
-    pass.setFilterLimits(-10, 10.0); // how to determine these limits?
+    pass.setFilterLimits(-10, 10.0);
     pass.setInputCloud(this->objectCloud);
     pass.filter(*this->objectCloud);
 
     // Down sampling
-    this->downSampleGrid.setInputCloud(this->objectCloud);
-    this->downSampleGrid.filter(*this->objectCloud);
+    pcl::ApproximateVoxelGrid<RefPointType> grid;
+    grid.setLeafSize(downsampleGridSize, downsampleGridSize, downsampleGridSize);
+    grid.setInputCloud(this->objectCloud);
+    grid.filter(*this->objectCloud);
 
     // Update the cloud being tracked 
     this->tracker->setInputCloud(this->objectCloud);
+    this->tracker->compute();
 
     // Save the output if necessary
     if (this->save) {
@@ -153,12 +164,20 @@ void BaseTracker::savePointCloud() {
     {
         std::cout << "State at " << this->frameCount << " : " << state.x << " " << state.y << " " << state.z << std::endl;
     }
-    // To get all the particles
-    ParticleFilter::PointCloudStatePtr particles = this->tracker->getParticles();
 
-    if (particles == nullptr) {
-        std::cout << "Particles are null" << std::endl;
+    // Save the particle cloud at this frame
+    ParticleFilter::PointCloudStatePtr particles = this->tracker->getParticles();
+    pcl::PointCloud<pcl::PointXYZ>::Ptr particleCloud (new pcl::PointCloud<pcl::PointXYZ>());
+
+    for (const auto& p : *particles) {
+        pcl::PointXYZ point;
+        point.x = p.x;
+        point.y = p.y;
+        point.z = p.z;
+        particleCloud->push_back(point);
     }
+
+    pcl::io::savePCDFileASCII(outputDir + std::to_string(this->frameCount) + ".pcd", *particleCloud);
 }
 
 void VirtualCamera::incrementFrame() {

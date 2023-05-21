@@ -20,6 +20,8 @@
 #include <pcl/tracking/kld_adaptive_particle_filter_omp.h>
 #include <pcl/tracking/approx_nearest_pair_point_cloud_coherence.h>
 #include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/visualization/cloud_viewer.h>
+#include <pcl/visualization/pcl_visualizer.h>
 
 #define INITIAL_NOISE_COVARIANCE 0.00001
 #define INITIAL_NOISE_MEAN 0.0
@@ -79,6 +81,7 @@ public:
                        float delta,
                        float epsilon,
                        float binSizeDimensions);
+    void setMaxFrame(long maxFrame);
 };
 
 class VirtualCamera : public BaseTracker {
