@@ -148,12 +148,17 @@ void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &c
 
 // Saves the point cloud
 void BaseTracker::savePointCloud() {
+    // Gets the particle XYZRPY
     Particle state = this->tracker->getResult();
     {
-        std::cout << "Frame " << this->frameCount << " : " << state.x << " " << state.y << " " << state.z << std::endl;
+        std::cout << "State at " << this->frameCount << " : " << state.x << " " << state.y << " " << state.z << std::endl;
     }
+    // To get all the particles
+    ParticleFilter::PointCloudStatePtr particles = this->tracker->getParticles();
 
-   //pcl::io::savePCDFileASCII(outputDir + std::to_string(this->frameCount) + ".pcd", *this->objectCloud);
+    if (particles == nullptr) {
+        std::cout << "Particles are null" << std::endl;
+    }
 }
 
 void VirtualCamera::incrementFrame() {
