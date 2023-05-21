@@ -156,14 +156,7 @@ void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &c
     this->frameCount++;
 }
 
-// Saves the point cloud
-void BaseTracker::savePointCloud() {
-    // Gets the particle XYZRPY
-    Particle state = this->tracker->getResult();
-    {
-        std::cout << "State at " << this->frameCount << " : " << state.x << " " << state.y << " " << state.z << std::endl;
-    }
-
+pcl::PointCloud<pcl::PointXYZ>::Ptr BaseTracker::getParticles() {
     // Save the particle cloud at this frame
     ParticleFilter::PointCloudStatePtr particles = this->tracker->getParticles();
     pcl::PointCloud<pcl::PointXYZ>::Ptr particleCloud (new pcl::PointCloud<pcl::PointXYZ>());
@@ -176,7 +169,21 @@ void BaseTracker::savePointCloud() {
         particleCloud->push_back(point);
     }
 
-    pcl::io::savePCDFileASCII(outputDir + std::to_string(this->frameCount) + ".pcd", *particleCloud);
+    return particleCloud;
+}
+
+// Saves the point cloud
+void BaseTracker::savePointCloud() {
+    // Gets the particle XYZRPY
+    Particle state = this->tracker->getResult();
+    {
+        std::cout << "State at " << this->frameCount << " : " << state.x << " " << state.y << " " << state.z << std::endl;
+    }
+
+    Eigen::Affine3f transformation = this->tracker->toEigenMatrix(state);
+    pcl::PointCloud<RefPointType>::Ptr resultCloud (new pcl::PointCloud<RefPointType>);
+    pcl::transformPointCloud<RefPointType> (*(this->tracker->getReferenceCloud()), *resultCloud, transformation);
+    pcl::io::savePCDFileASCII(outputDir + std::to_string(this->frameCount) + ".pcd", *resultCloud);
 }
 
 void VirtualCamera::incrementFrame() {

@@ -64,7 +64,7 @@ protected:
 
     // The actual filter applied for tracking
     pcl::tracking::ParticleFilterTracker<RefPointType, Particle>::Ptr tracker;
-
+    pcl::PointCloud<pcl::PointXYZ>::Ptr getParticles();
 public:
     // For managing the video frames
     long frameCount;
