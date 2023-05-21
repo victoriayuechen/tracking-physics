@@ -3,7 +3,7 @@
 int main() {
     // Variables used for tracker
     float downSampleSize = 0.0002f;
-    int particleCount = 1000;
+    int particleCount = 500;
     double variance = 0.015;
     float delta = 0.99f;
     float epsilon = 0.02f;
@@ -12,7 +12,7 @@ int main() {
     std::string resultDir = "../data/output/output_cloud_";
 
     // Maximum number of frames that are processed
-    long maxFrames = 40;
+    long maxFrames = 100;
 
     // Start up the tracker
     VirtualCamera tracker = VirtualCamera();

@@ -1,6 +1,28 @@
 #include "pcl_tracking.hpp"
+#include <functional>
+
+
 using namespace pcl::tracking;
 std::mutex mtx_;
+
+
+pcl::PointXYZ getCenter(pcl::PointCloud<RefPointType>::Ptr& cloud) {
+    auto cloudPoints = cloud->points;
+    float numPoints = cloudPoints.size();
+    pcl::PointXYZ center = pcl::PointXYZ(0.0f, 0.0f, 0.0f);
+
+    for (const auto& p : cloudPoints) {
+        center.x += p.x;
+        center.y += p.y;
+        center.z += p.z;
+    }
+
+    center.x /= numPoints;
+    center.y /= numPoints;
+    center.z /= numPoints;
+
+    return center;
+}
 
 void BaseTracker::setDownsampleSize(float size) {
     this->downsampleGridSize = size; 
@@ -176,16 +198,25 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr BaseTracker::getParticles() {
 
 // Saves the point cloud
 void BaseTracker::savePointCloud() {
+    //std::cout << " == " << this->frameCount << " == " << std::endl;
+
     // Gets the particle XYZRPY
     Particle state = this->tracker->getResult();
     {
-        std::cout << "State at " << this->frameCount << " : " << state.x << " " << state.y << " " << state.z << std::endl;
+        // std::cout << "Guess: " << state.x << " " << state.y << " " << state.z << std::endl;
+        std::cout << state.x << "," << state.y << "," << state.z << std::endl;
     }
 
     Eigen::Affine3f transformation = this->tracker->toEigenMatrix(state);
     pcl::PointCloud<RefPointType>::Ptr resultCloud (new pcl::PointCloud<RefPointType>);
     pcl::transformPointCloud<RefPointType> (*(this->tracker->getReferenceCloud()), *resultCloud, transformation);
     pcl::io::savePCDFileASCII(outputDir + std::to_string(this->frameCount) + ".pcd", *resultCloud);
+
+    auto center = getCenter(this->objectCloud);
+    {
+        // std::cout << "Truth: " << center.x << " " << center.y << " " << center.z << std::endl;
+       // std::cout << center.x << "," << center.y << "," << center.z << std::endl;
+    }
 }
 
 void VirtualCamera::incrementFrame() {
