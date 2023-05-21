@@ -87,15 +87,14 @@ void BaseTracker::setUpTracking(const std::string& modelLoc,
     pcl::transformPointCloud<RefPointType>(*this->objectCloud, *this->objectCloud, translateModel.inverse());
 
     // Downsample the target cloud
-    pcl::PointCloud<RefPointType>::Ptr transformedDownCloud(new pcl::PointCloud<RefPointType>); 
     this->downSampleGrid.setInputCloud(this->objectCloud);
-    this->downSampleGrid.setLeafSize(this->downsampleGridSize, this->downsampleGridSize, this->downsampleGridSize); 
-    this->downSampleGrid.filter(*transformedDownCloud); 
+    this->downSampleGrid.setLeafSize(this->downsampleGridSize, this->downsampleGridSize, this->downsampleGridSize);
+    this->downSampleGrid.filter(*this->objectCloud);
 
     // Set params for KLD Filter
     this->tracker->setCloudCoherence(coherence);
     this->tracker->setTrans(translateModel);
-    this->tracker->setReferenceCloud(transformedDownCloud);
+    this->tracker->setReferenceCloud(this->objectCloud);
 }
 
 // Removes the cloud of the floor from the cloud of the object

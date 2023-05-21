@@ -7,12 +7,12 @@ int main() {
     double variance = 0.015;
     float delta = 0.99f;
     float epsilon = 0.02f;
-    float binSize = 0.001f;
-    bool save = false;
+    float binSize = 0.045f;
+    bool save = true;
     std::string resultDir = "../data/output/output_cloud_";
 
     // Maximum number of frames that are processed
-    long maxFrames = 20;
+    long maxFrames = 50;
 
     // Start up the tracker
     VirtualCamera tracker = VirtualCamera();
