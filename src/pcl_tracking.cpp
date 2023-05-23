@@ -117,6 +117,9 @@ void BaseTracker::runRANSAC(const pcl::PointCloud<RefPointType>::ConstPtr &cloud
 }
 
 void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &cloud) {
+    // Measure starting time for setting up
+    auto setupStartTime = std::chrono::high_resolution_clock::now();
+    
     // Run RANSAC for segmentation, do only once
     if (this->frameCount < 2) {
         this->runRANSAC(cloud);
@@ -147,7 +150,19 @@ void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &c
 
     // Update the cloud being tracked 
     this->tracker->setInputCloud(this->objectCloud);
+
+    // Measure stopping time for setting up
+    auto setupStopTime = std::chrono::high_resolution_clock::now();
+    // Save setup time
+    this->setupTime += std::chrono::duration<double, std::milli>(setupStopTime - setupStartTime).count();
+
+    // Measure tracking starting time
+    auto trackingStartTime = std::chrono::high_resolution_clock::now();
     this->tracker->compute();
+    // Measure tracking stopping time
+    auto trackingStopTime = std::chrono::high_resolution_clock::now();
+    // Save tracking time
+    this->trackingTime += std::chrono::duration<double, std::milli>(trackingStopTime - trackingStartTime).count();
 
     // Save the output if necessary
     if (this->save) {
