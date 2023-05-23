@@ -1,10 +1,7 @@
 #include "pcl_tracking.hpp"
 #include <functional>
 
-
 using namespace pcl::tracking;
-std::mutex mtx_;
-
 
 pcl::PointXYZ getCenter(pcl::PointCloud<RefPointType>::Ptr& cloud) {
     auto cloudPoints = cloud->points;
@@ -57,30 +54,22 @@ void BaseTracker::initializeKLDFilter(float binSize, int numParticles, double va
     this->epsilon = epsilon;
 
     // Initialise KLD Filter
-    KLDAdaptiveParticleFilterOMPTracker<RefPointType, Particle>::Ptr kldFilter(new KLDAdaptiveParticleFilterOMPTracker<RefPointType, Particle> (N_THREADS));
-
-    // Parameters used when resampling new particles
-    kldFilter->setInitialNoiseCovariance(initialNoiseCovariance);
-    kldFilter->setInitialNoiseMean(initialNoiseMean);
-    kldFilter->setStepNoiseCovariance(getStepNoiseCovariance(variance));
-
-    // Meta-parameters for KLD sampling algorithm, dictates the properties of sampling distribution
-    Particle bin;
-    bin.x = bin.y = bin.z = bin.roll = bin.yaw = bin.pitch = binSize;
-
-    kldFilter->setMaximumParticleNum(numParticles);
-    kldFilter->setDelta(this->delta);
-    kldFilter->setEpsilon(this->epsilon);
-    kldFilter->setBinSize(bin);
-
-    // Parameters for KLD in each iteration
-    kldFilter->setIterationNum(1);
-    kldFilter->setParticleNum(numParticles);
-    kldFilter->setResampleLikelihoodThr(0.0);
-    kldFilter->setUseNormal(false);
+    ParticleFilterOMPTracker<RefPointType, Particle>::Ptr kldFilter(new ParticleFilterOMPTracker<RefPointType, Particle> (N_THREADS));
 
     // Set tracker to be the KLD Filter
     this->tracker = kldFilter;
+
+    // Parameters for KLD in each iteration
+    this->tracker->setTrans(Eigen::Affine3f::Identity());
+    this->tracker->setIterationNum(1);
+    this->tracker->setParticleNum(numParticles);
+    this->tracker->setResampleLikelihoodThr(0.0);
+    this->tracker->setUseNormal(false);
+
+    // Parameters used when resampling new particles
+    this->tracker->setInitialNoiseCovariance(initialNoiseCovariance);
+    this->tracker->setInitialNoiseMean(initialNoiseMean);
+    this->tracker->setStepNoiseCovariance(getStepNoiseCovariance(variance));
 }
 
 // Sets up the tools needed for tracking: KLD filter, downsampling, NN search
@@ -94,12 +83,11 @@ void BaseTracker::setUpTracking(const std::string& modelLoc,
     this->initializeKLDFilter(binSizeDimensions, numParticles, variance, delta, epsilon);
 
     // Get the initial target cloud
-    pcl::PointCloud<RefPointType>::Ptr initModel (new pcl::PointCloud<RefPointType>());
-    if(pcl::io::loadPCDFile<pcl::PointXYZRGBA>(modelLoc, *initModel) == -1) {
+    this->objectCloud.reset(new pcl::PointCloud<RefPointType>());
+    if(pcl::io::loadPCDFile<pcl::PointXYZRGBA>(modelLoc, *objectCloud) == -1) {
         std::cout << "File " << modelLoc << " could not be found" << std::endl;
         exit(-1);
     }
-    this->objectCloud = initModel;
 
     // Set up coherence for point cloud tracking
     ApproxNearestPairPointCloudCoherence<RefPointType>::Ptr coherence (new ApproxNearestPairPointCloudCoherence<RefPointType>);
@@ -145,12 +133,11 @@ void BaseTracker::runRANSAC(const pcl::PointCloud<RefPointType>::ConstPtr &cloud
 }
 
 void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &cloud) {
-    // Run RANSAC for segmentation, do only once
-    if (this->frameCount < 2) {
-        this->runRANSAC(cloud);
-    }
-
-    std::lock_guard<std::mutex> lock (mtx_);
+//    // Run RANSAC for segmentation, do only once
+//    if (this->frameCount < 2) {
+//        this->runRANSAC(cloud);
+//    }
+    this->trackingMutex.lock();
     this->objectCloud.reset(new pcl::PointCloud<RefPointType>());
 
     // Set the target cloud, only identity transformation needed (for now)
@@ -161,7 +148,7 @@ void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &c
     // Filter along a specified dimension
     pcl::PassThrough<RefPointType> pass;
     pass.setFilterFieldName("z");
-    pass.setFilterLimits(-10.0f, 10.0f);
+    pass.setFilterLimits(-20.0f, 20.0f);
     pass.setInputCloud(this->objectCloud);
     pass.filter(*this->objectCloud);
 
@@ -178,6 +165,7 @@ void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &c
     }
 
     this->frameCount++;
+    this->trackingMutex.unlock();
 }
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr BaseTracker::getParticles() {
@@ -198,25 +186,39 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr BaseTracker::getParticles() {
 
 // Saves the point cloud
 void BaseTracker::savePointCloud() {
-    //std::cout << " == " << this->frameCount << " == " << std::endl;
+    std::cout << " == " << this->frameCount << " == " << std::endl;
 
-    // Gets the particle XYZRPY
+    // Gets the particle XYZRPY (centroid of particle cloud)
     Particle state = this->tracker->getResult();
     {
-        // std::cout << "Guess: " << state.x << " " << state.y << " " << state.z << std::endl;
-        std::cout << state.x << "," << state.y << "," << state.z << std::endl;
+        std::cout << "Guess: " << state.x << " " << state.y << " " << state.z << std::endl;
+
+        // Write predicted centroids to file
+        std::string out = std::to_string(state.x) + "," + std::to_string(state.y) + "," + std::to_string(state.z) + "\n";
+        this->guessOutput << out;
     }
 
-    Eigen::Affine3f transformation = this->tracker->toEigenMatrix(state);
-    pcl::PointCloud<RefPointType>::Ptr resultCloud (new pcl::PointCloud<RefPointType>);
-    pcl::transformPointCloud<RefPointType> (*(this->tracker->getReferenceCloud()), *resultCloud, transformation);
-    pcl::io::savePCDFileASCII(outputDir + std::to_string(this->frameCount) + ".pcd", *resultCloud);
-
-    auto center = getCenter(this->objectCloud);
+    auto center = getCenter(objectCloud);
     {
-        // std::cout << "Truth: " << center.x << " " << center.y << " " << center.z << std::endl;
-       // std::cout << center.x << "," << center.y << "," << center.z << std::endl;
+         std::cout << "Truth: " << center.x << " " << center.y << " " << center.z << std::endl;
+
+         // Write true centroids to file
+         std::string out = std::to_string(center.x) + "," + std::to_string(center.y) + "," + std::to_string(center.z) + "\n";
+         this->truthOutput << out;
     }
+
+//    // Write the predicted point cloud to file
+//    Eigen::Affine3f transformation = this->tracker->toEigenMatrix(state);
+//    pcl::PointCloud<RefPointType>::Ptr resultCloud (new pcl::PointCloud<RefPointType>);
+//    pcl::transformPointCloud<RefPointType> (*(this->tracker->getReferenceCloud()), *resultCloud, transformation);
+//    pcl::io::savePCDFileASCII(outputDir + std::to_string(this->frameCount) + ".pcd", *resultCloud);
+
+}
+
+// Sets the files in which to write the predictions and truth values
+void BaseTracker::writePredictions(std::string &truthFile, std::string &guessFile) {
+    this->truthOutput.open(truthFile);
+    this->guessOutput.open(guessFile);
 }
 
 void VirtualCamera::incrementFrame() {

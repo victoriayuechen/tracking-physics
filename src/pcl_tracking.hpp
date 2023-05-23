@@ -35,6 +35,10 @@ typedef pcl::tracking::ParticleFilterTracker<RefPointType, Particle> ParticleFil
 
 class BaseTracker {
 private:
+    std::mutex trackingMutex;
+
+    std::ofstream truthOutput;
+    std::ofstream guessOutput;
     float downsampleGridSize;
     float delta;
     float epsilon;
@@ -84,6 +88,7 @@ public:
                        float epsilon,
                        float binSizeDimensions);
     void setMaxFrame(long maxFrame);
+    void writePredictions(std::string& truthFile, std::string& guessFile);
 };
 
 class VirtualCamera : public BaseTracker {
