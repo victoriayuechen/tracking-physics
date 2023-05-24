@@ -156,7 +156,7 @@ pcl::PointXYZ getCenter(pcl::PointCloud<RefPointType>::Ptr& cloud) {
 void filterPassThrough (const CloudConstPtr &cloud, Cloud &result) {
   pcl::PassThrough<pcl::PointXYZRGBA> pass;
   pass.setFilterFieldName ("z");
-  pass.setFilterLimits (-20.0, 20.0);
+  pass.setFilterLimits (-40.0, 40.0);
   pass.setKeepOrganized (false);
   pass.setInputCloud (cloud);
   pass.filter (result);
@@ -171,14 +171,15 @@ void gridSampleApprox (const CloudConstPtr &cloud, Cloud &result, double leaf_si
 
 void evaluate() {
     std::lock_guard<std::mutex> lock (write_);
+    std::cout << "----" << std::endl;
     // Gets the particle XYZRPY (centroid of particle cloud)
     ParticleT state = tracker_->getResult();
     {
-        std::cout << "Guess: " << state.x << " " << state.y << " " << state.z << std::endl;
+       std::cout << "Guess: " << state.x << "," << state.y << "," << state.z << ", " << state.roll << "," << state.pitch << "," << state.yaw << std::endl;
 
-        // Write predicted centroids to file
-        std::string out = std::to_string(state.x) + "," + std::to_string(state.y) + "," + std::to_string(state.z) + "\n";
-        guessOutput << out;
+//        // Write predicted centroids to file
+//        std::string out = std::to_string(state.x) + "," + std::to_string(state.y) + "," + std::to_string(state.z) + "\n";
+//        guessOutput << out;
     }
 
     auto center = getCenter(target_cloud);
@@ -186,8 +187,8 @@ void evaluate() {
         std::cout << "Truth: " << center.x << " " << center.y << " " << center.z << std::endl;
 
 //        // Write true centroids to file
-        std::string out = std::to_string(center.x) + "," + std::to_string(center.y) + "," + std::to_string(center.z) + "\n";
-        truthOutput << out;
+//      std::string out = std::to_string(center.x) + "," + std::to_string(center.y) + "," + std::to_string(center.z) + "\n";
+//      truthOutput << out;
     }
 }
 
@@ -224,10 +225,10 @@ int main () {
   new_cloud_  = false;
   downsampling_grid_size_ =  0.0002;
 
-  std::vector<double> default_step_covariance = std::vector<double> (6, 0.015 * 0.015);
-  default_step_covariance[3] *= 40.0;
-  default_step_covariance[4] *= 40.0;
-  default_step_covariance[5] *= 40.0;
+  std::vector<double> default_step_covariance = std::vector<double> (6, 0.01);
+//  default_step_covariance[3] *= 40.0;
+//  default_step_covariance[4] *= 40.0;
+//  default_step_covariance[5] *= 40.0;
 
   std::vector<double> initial_noise_covariance = std::vector<double> (6, 0.00001);
   std::vector<double> default_initial_mean = std::vector<double> (6, 0.0);
@@ -291,7 +292,7 @@ int main () {
 
 //===========================================
   int frameCount = 0; 
-  int maxFrames = 10;
+  int maxFrames = 500;
   // frameCount++;
 
   truthOutput.open("../analysis/truth.txt");
@@ -299,7 +300,7 @@ int main () {
 
   while (frameCount < maxFrames) {
       target_cloud.reset (new Cloud);
-      if (pcl::io::loadPCDFile<RefPointType> ("../movement/frame_" + std::to_string(frameCount) + ".pcd", *target_cloud) == -1) {
+      if (pcl::io::loadPCDFile<RefPointType> ("../movement/frame_" + std::to_string(0) + ".pcd", *target_cloud) == -1) {
       PCL_ERROR ("Could not read PCD file \n");
       return -1; 
     }

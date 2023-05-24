@@ -67,7 +67,7 @@ protected:
     pcl::ExtractIndices<RefPointType> floorObjectSegment;
 
     // The actual filter applied for tracking
-    pcl::tracking::ParticleFilterTracker<RefPointType, Particle>::Ptr tracker;
+    pcl::tracking::KLDAdaptiveParticleFilterOMPTracker<RefPointType, Particle>::Ptr tracker;
     pcl::PointCloud<pcl::PointXYZ>::Ptr getParticles();
 
     void downSample();

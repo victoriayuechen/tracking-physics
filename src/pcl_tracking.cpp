@@ -40,10 +40,10 @@ void BaseTracker::downSample() {
 // Creates the vector of step covariances, according to the 6 DOF
 std::vector<double> getStepNoiseCovariance(double variance) {
     double covariance = variance * 1;
-    std::vector<double> defaultStepCovariance = std::vector<double>(6, covariance);
-    defaultStepCovariance[3] *= 40;
-    defaultStepCovariance[4] *= 40;
-    defaultStepCovariance[5] *= 40;
+    std::vector<double> defaultStepCovariance = std::vector<double>(6, variance);
+    defaultStepCovariance[3] = variance;
+    defaultStepCovariance[4] = variance;
+    defaultStepCovariance[5] = variance;
 
     return defaultStepCovariance;
 }
@@ -54,10 +54,19 @@ void BaseTracker::initializeKLDFilter(float binSize, int numParticles, double va
     this->epsilon = epsilon;
 
     // Initialise KLD Filter
-    ParticleFilterOMPTracker<RefPointType, Particle>::Ptr kldFilter(new ParticleFilterOMPTracker<RefPointType, Particle> (N_THREADS));
+    KLDAdaptiveParticleFilterOMPTracker<RefPointType, Particle>::Ptr kldFilter(new KLDAdaptiveParticleFilterOMPTracker<RefPointType, Particle> (N_THREADS));
 
     // Set tracker to be the KLD Filter
     this->tracker = kldFilter;
+
+
+    // Meta-parameters for KLD sampling algorithm, dictates the properties of sampling distribution
+    Particle bin;
+    bin.x = bin.y = bin.z = bin.roll = bin.yaw = bin.pitch = binSize;
+    this->tracker->setMaximumParticleNum(numParticles);
+    this->tracker->setDelta(this->delta);
+    this->tracker->setEpsilon(this->epsilon);
+    this->tracker->setBinSize(bin);
 
     // Parameters for KLD in each iteration
     this->tracker->setTrans(Eigen::Affine3f::Identity());
@@ -148,7 +157,7 @@ void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &c
     // Filter along a specified dimension
     pcl::PassThrough<RefPointType> pass;
     pass.setFilterFieldName("z");
-    pass.setFilterLimits(-20.0f, 20.0f);
+    pass.setFilterLimits(-50.0f, 40.0f);
     pass.setInputCloud(this->objectCloud);
     pass.filter(*this->objectCloud);
 
@@ -191,7 +200,7 @@ void BaseTracker::savePointCloud() {
     // Gets the particle XYZRPY (centroid of particle cloud)
     Particle state = this->tracker->getResult();
     {
-        std::cout << "Guess: " << state.x << " " << state.y << " " << state.z << std::endl;
+        std::cout << "Guess: " << state.x << "," << state.y << "," << state.z << ", " << state.roll << "," << state.pitch << "," << state.yaw << std::endl;
 
         // Write predicted centroids to file
         std::string out = std::to_string(state.x) + "," + std::to_string(state.y) + "," + std::to_string(state.z) + "\n";
