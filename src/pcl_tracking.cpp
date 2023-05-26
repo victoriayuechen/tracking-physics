@@ -102,8 +102,7 @@ void BaseTracker::initializeKLDFilter(float binSize, int numParticles, double va
 
     // Set tracker to be the KLD Filter
     this->tracker = kldFilter;
-
-
+    
     // Meta-parameters for KLD sampling algorithm, dictates the properties of sampling distribution
     Particle bin;
     bin.x = bin.y = bin.z = bin.roll = bin.yaw = bin.pitch = binSize;
@@ -209,13 +208,12 @@ void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &c
     // Set the target cloud, only identity transformation needed (for now)
     Eigen::Matrix4f identity = Eigen::Matrix4f::Identity();
     pcl::transformPointCloud(*cloud, *this->objectCloud, this->cameraCorrection);
-    this->tracker->getCloudCoherence()->setTargetCloud(this->objectCloud);
 
     // Filter along a specified dimension
     pcl::PassThrough<RefPointType> pass;
     pass.setFilterFieldName("y");
     pass.setFilterLimits(-2.0f, -0.008f);
-    pass.setInputCloud(this->objectCloud);
+    pass.setInputCloud(cloud);
     pass.filter(*this->objectCloud);
 
     // Down sampling
