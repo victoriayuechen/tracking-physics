@@ -3,6 +3,5 @@ build/
 .idea/
 cmake-build-debug/
 data/
-translation/
 rotation/
 vid_dyn_move/
