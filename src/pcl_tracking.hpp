@@ -23,8 +23,6 @@
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/visualization/pcl_visualizer.h>
 
-#define SENSOR_FROM_CENTER_Y -0.52
-#define SENSOR_FROM_CENTER_Z 1.18
 #define INITIAL_NOISE_COVARIANCE 0.00001
 #define INITIAL_NOISE_MEAN 0.0
 #define COHERENCE_LIMIT 0.1

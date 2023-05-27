@@ -117,6 +117,7 @@ void BaseTracker::setUpTracking(const std::string& modelLoc,
 }
 
 // Removes the cloud of the floor from the cloud of the object
+// Note: Not used at the moment
 void BaseTracker::runRANSAC(const pcl::PointCloud<RefPointType>::ConstPtr &cloud) {
     // Identify the floor plane
     this->floorPoints.reset(new pcl::PointIndices);
@@ -146,7 +147,7 @@ void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &c
     Eigen::Matrix4f identity = Eigen::Matrix4f::Identity();
     pcl::transformPointCloud(*cloud, *this->objectCloud, identity);
 
-    // Filter along a specified dimension
+    // Filter along a specified dimension, not yet tuned
     pcl::PassThrough<RefPointType> pass;
     pass.setFilterFieldName("z");
     pass.setFilterLimits(-40.0f, 40.0f);
