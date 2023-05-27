@@ -5,8 +5,8 @@ import numpy as np
 
 # Find the experiment type 
 experiment_type = sys.argv[1]
-truth = pd.read_csv('truth-exp1-suzanne.txt', delimiter=',').to_numpy()
-guess_1000 = pd.read_csv('guess-exp1-suzanne.txt', delimiter=',').to_numpy()
+truth = pd.read_csv('results/truth-exp3-bunny.txt', delimiter=',').to_numpy()
+guess_1000 = pd.read_csv('results/guess-exp3-bunny.txt', delimiter=',').to_numpy()
 
 # Euclidean distance between the centroids
 dist_1000 = np.linalg.norm((truth - guess_1000), axis=1)

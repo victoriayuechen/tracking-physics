@@ -12,13 +12,13 @@ int main() {
 
     //  File directories to use
     std::string resultDir = ".."; // not used as of now
-    std::string experiment = "sin-wave/";
-    std::string targetModel = "utah";
-    std::string truthFileName = "../analysis/truth-exp2-utah.txt";
-    std::string guessFileName = "../analysis/guess-exp2-utah.txt";
+    std::string experiment = "acceleration/";
+    std::string targetModel = "bunny";
+    std::string truthFileName = "../analysis/results/truth-exp3-bunny.txt";
+    std::string guessFileName = "../analysis/results/guess-exp3-bunny.txt";
 
     // Maximum number of frames that are processed
-    long maxFrames = 1000;
+    long maxFrames = 432;
 
     // Start up the tracker
     VirtualCamera tracker = VirtualCamera();
