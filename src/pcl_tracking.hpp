@@ -70,7 +70,6 @@ protected:
     pcl::tracking::KLDAdaptiveParticleFilterOMPTracker<RefPointType, Particle>::Ptr tracker;
     pcl::PointCloud<pcl::PointXYZ>::Ptr getParticles();
 
-    Eigen::Matrix4f cameraCorrection;
 public:
     // For managing the video frames
     long frameCount;

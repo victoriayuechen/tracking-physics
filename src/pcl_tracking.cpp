@@ -1,5 +1,4 @@
 #include "pcl_tracking.hpp"
-#include <functional>
 
 using namespace pcl::tracking;
 
