@@ -195,7 +195,7 @@ void BaseTracker::savePointCloud() {
     // Gets the particle XYZRPY (centroid of particle cloud)
     Particle state = this->tracker->getResult();
     {
-        std::cout << "Guess: " << state.x << "," << state.y << "," << state.z << ", " << state.roll << "," << state.pitch << "," << state.yaw << std::endl;
+        std::cout << "Predicted: " << state.x << "," << state.y << "," << state.z << ", " << state.roll << "," << state.pitch << "," << state.yaw << std::endl;
 
         // Write predicted centroids to file
         std::string out = std::to_string(state.x) + "," + std::to_string(state.y) + "," + std::to_string(state.z) + "\n";
@@ -204,7 +204,7 @@ void BaseTracker::savePointCloud() {
 
     auto center = getCenter(this->objectCloud);
     {
-         std::cout << "Truth: " << center.x << " " << center.y << " " << center.z << std::endl;
+         std::cout << "True: " << center.x << " " << center.y << " " << center.z << std::endl;
 
          // Write true centroids to file
          std::string out = std::to_string(center.x) + "," + std::to_string(center.y) + "," + std::to_string(center.z) + "\n";
@@ -216,6 +216,13 @@ void BaseTracker::savePointCloud() {
 void BaseTracker::writePredictions(std::string &truthFile, std::string &guessFile) {
     this->truthOutput.open(truthFile);
     this->guessOutput.open(guessFile);
+
+    if (!truthOutput.is_open()) {
+        this->truthOutput = std::ofstream(truthFile);
+    }
+    if (!guessOutput.is_open()) {
+        this->guessOutput = std::ofstream(guessFile);
+    }
 }
 
 // Set up for finding the frames of PCD files

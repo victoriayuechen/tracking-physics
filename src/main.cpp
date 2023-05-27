@@ -9,9 +9,13 @@ int main() {
     float epsilon = 0.02f;
     float binSize = 0.1f;
     bool save = true;
-    std::string resultDir = "../../output/output_cloud_";
-    std::string truthFileName = "../analysis/truth.txt";
-    std::string guessFileName = "../analysis/guess.txt";
+
+    //  File directories to use
+    std::string resultDir = ".."; // not used as of now
+    std::string experiment = "sin-wave/";
+    std::string targetModel = "utah";
+    std::string truthFileName = "../analysis/truth-exp2-utah.txt";
+    std::string guessFileName = "../analysis/guess-exp2-utah.txt";
 
     // Maximum number of frames that are processed
     long maxFrames = 1000;
@@ -20,14 +24,15 @@ int main() {
     VirtualCamera tracker = VirtualCamera();
     tracker.initializeCamera(resultDir, maxFrames, save);
     tracker.setDownsampleSize(downSampleSize);
-    tracker.setUpTracking("../translation/frame_0.pcd", particleCount, variance, delta, epsilon, binSize);
+    tracker.setUpTracking("../tests/" + experiment + targetModel + "/frame_0.pcd", particleCount, variance, delta, epsilon, binSize);
     tracker.writePredictions(truthFileName, guessFileName);
 
     // Load all frames 
     pcl::PointCloud<RefPointType>::Ptr cloud (new pcl::PointCloud<RefPointType>);
+    std::string fileNames = "../tests/" + experiment + targetModel + "/frame_";
 
     while (tracker.frameCount < maxFrames) {
-        if (pcl::io::loadPCDFile<RefPointType> ("../translation/frame_" + std::to_string(tracker.frameCount) + ".pcd", *cloud) == -1) {
+        if (pcl::io::loadPCDFile<RefPointType> ((fileNames + std::to_string(tracker.frameCount) + ".pcd"), *cloud) == -1) {
             PCL_ERROR ("Could not read PCD file \n");
             return -1; 
         }

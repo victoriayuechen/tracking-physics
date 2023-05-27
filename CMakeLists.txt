@@ -9,14 +9,10 @@ link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 # Executable for tracking
-add_executable(tracking src/imu.hpp src/imu.cpp
-                 src/pcl_tracking.hpp src/pcl_tracking.cpp
+add_executable(tracking src/pcl_tracking.hpp src/pcl_tracking.cpp
                  src/main.cpp)
 target_link_libraries(tracking ${PCL_LIBRARIES})
 
 # Executable for tutorial of tracking
 add_executable(example examples/tracking_example.cpp examples/tracking_example.cpp)
 target_link_libraries(example ${PCL_LIBRARIES})
-#
-#add_executable(kilian kilian/pointcloud_tracking.hpp kilian/pointcloud_tracking.cpp kilian/main.cpp)
-#target_link_libraries(kilian ${PCL_LIBRARIES})

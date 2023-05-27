@@ -3,5 +3,6 @@ build/
 .idea/
 cmake-build-debug/
 data/
-rotation/
+tests/ 
 vid_dyn_move/
+.png
