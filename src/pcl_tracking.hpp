@@ -27,7 +27,7 @@
 #define SENSOR_FROM_CENTER_Z 1.18
 #define INITIAL_NOISE_COVARIANCE 0.00001
 #define INITIAL_NOISE_MEAN 0.0
-#define COHERENCE_LIMIT 0.01
+#define COHERENCE_LIMIT 0.1
 #define N_THREADS 1
 
 using namespace std::chrono_literals;

@@ -21,6 +21,24 @@ pcl::PointXYZ getCenter(pcl::PointCloud<RefPointType>::Ptr& cloud) {
     return center;
 }
 
+pcl::PointXYZ getCenterAlpha(pcl::PointCloud<pcl::PointXYZRGBA>& cloud) {
+    auto cloudPoints = cloud.points;
+    float numPoints = cloudPoints.size();
+    pcl::PointXYZ center = pcl::PointXYZ(0.0f, 0.0f, 0.0f);
+
+    for (const auto& p : cloudPoints) {
+        center.x += p.x;
+        center.y += p.y;
+        center.z += p.z;
+    }
+
+    center.x /= numPoints;
+    center.y /= numPoints;
+    center.z /= numPoints;
+
+    return center;
+}
+
 void BaseTracker::setDownsampleSize(float size) {
     this->downsampleGridSize = size; 
 }
@@ -168,6 +186,7 @@ void BaseTracker::setUpTracking(const std::string& modelLoc,
     this->tracker->setCloudCoherence(coherence);
     this->tracker->setTrans(translateModel);
     this->tracker->setReferenceCloud(this->objectCloud);
+    auto variable = 1; 
 }
 
 // Removes the cloud of the floor from the cloud of the object
@@ -217,10 +236,10 @@ void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &c
     pass.filter(*this->objectCloud);
 
     // Down sampling
-//    pcl::ApproximateVoxelGrid<RefPointType> grid;
-//    grid.setLeafSize(downsampleGridSize, downsampleGridSize, downsampleGridSize);
-//    grid.setInputCloud(this->objectCloud);
-//    grid.filter(*this->objectCloud);
+    pcl::ApproximateVoxelGrid<RefPointType> grid;
+    grid.setLeafSize(downsampleGridSize, downsampleGridSize, downsampleGridSize);
+    grid.setInputCloud(this->objectCloud);
+    grid.filter(*this->objectCloud);
 
     // Update the cloud being tracked 
     this->tracker->setInputCloud(this->objectCloud);
@@ -261,17 +280,18 @@ void BaseTracker::savePointCloud() {
         std::cout << "Guess: " << state.x << "," << state.y << "," << state.z << ", " << state.roll << "," << state.pitch << "," << state.yaw << std::endl;
 
 //        // Write predicted centroids to file
-//        std::string out = std::to_string(state.x) + "," + std::to_string(state.y) + "," + std::to_string(state.z) + "\n";
-//        this->guessOutput << out;
+        std::string out = std::to_string(state.x) + "," + std::to_string(state.y) + "," + std::to_string(state.z) + "\n";
+        this->guessOutput << out;
     }
 
-    auto center = getCenter(objectCloud);
+//    auto refCloud = *(this->tracker->getReferenceCloud());
+    auto center = getCenter(this->objectCloud);
     {
          std::cout << "Truth: " << center.x << " " << center.y << " " << center.z << std::endl;
 
 //         // Write true centroids to file
-//         std::string out = std::to_string(center.x) + "," + std::to_string(center.y) + "," + std::to_string(center.z) + "\n";
-//         this->truthOutput << out;
+         std::string out = std::to_string(center.x) + "," + std::to_string(center.y) + "," + std::to_string(center.z) + "\n";
+         this->truthOutput << out;
     }
 
 //    // Write the predicted point cloud to file

@@ -49,25 +49,6 @@ int counter;
 std::ofstream truthOutput;
 std::ofstream guessOutput;
 
-// //Draw the current particles
-// bool
-// drawParticles (pcl::visualization::PCLVisualizer& viz)
-// {
-//   ParticleFilter::PointCloudStatePtr particles = tracker_->getParticles ();
-//   if (particles && new_cloud_)
-//   {
-//       //Set pointCloud with particle's points
-//       pcl::PointCloud<pcl::PointXYZ>::Ptr particle_cloud (new pcl::PointCloud<pcl::PointXYZ> ());
-//     for (const auto& particle: *particles)
-// 	{
-// 	  pcl::PointXYZ point;
-          
-// 	  point.x = particle.x;
-// 	  point.y = particle.y;
-// 	  point.z = particle.z;
-// 	  particle_cloud->push_back (point);
-// 	}
-
 //       //Draw red particles 
 //       {
 // 	pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> red_color (particle_cloud, 250, 99, 71);
@@ -171,15 +152,15 @@ void gridSampleApprox (const CloudConstPtr &cloud, Cloud &result, double leaf_si
 
 void evaluate() {
     std::lock_guard<std::mutex> lock (write_);
-    std::cout << "----" << std::endl;
+    std::cout << "----" <<  std::endl;
     // Gets the particle XYZRPY (centroid of particle cloud)
     ParticleT state = tracker_->getResult();
     {
        std::cout << "Guess: " << state.x << "," << state.y << "," << state.z << ", " << state.roll << "," << state.pitch << "," << state.yaw << std::endl;
 
 //        // Write predicted centroids to file
-//        std::string out = std::to_string(state.x) + "," + std::to_string(state.y) + "," + std::to_string(state.z) + "\n";
-//        guessOutput << out;
+        std::string out = std::to_string(state.x) + "," + std::to_string(state.y) + "," + std::to_string(state.z) + "\n";
+        guessOutput << out;
     }
 
     auto center = getCenter(target_cloud);
@@ -187,8 +168,8 @@ void evaluate() {
         std::cout << "Truth: " << center.x << " " << center.y << " " << center.z << std::endl;
 
 //        // Write true centroids to file
-//      std::string out = std::to_string(center.x) + "," + std::to_string(center.y) + "," + std::to_string(center.z) + "\n";
-//      truthOutput << out;
+      std::string out = std::to_string(center.x) + "," + std::to_string(center.y) + "," + std::to_string(center.z) + "\n";
+      truthOutput << out;
     }
 }
 
@@ -214,7 +195,7 @@ void cloud_cb (const CloudConstPtr &cloud)
 
 int main () {
   target_cloud.reset(new Cloud());
-  if (pcl::io::loadPCDFile ("../movement/frame_0.pcd", *target_cloud) == -1) {
+  if (pcl::io::loadPCDFile ("../data/frame_0.pcd", *target_cloud) == -1) {
     std::cout << "pcd file not found" << std::endl;
     exit(-1);
   }
@@ -223,12 +204,12 @@ int main () {
 
   //Set parameters
   new_cloud_  = false;
-  downsampling_grid_size_ =  0.0002;
+  downsampling_grid_size_ =  0.002;
 
   std::vector<double> default_step_covariance = std::vector<double> (6, 0.01);
-//  default_step_covariance[3] *= 40.0;
-//  default_step_covariance[4] *= 40.0;
-//  default_step_covariance[5] *= 40.0;
+  default_step_covariance[3] *= 40.0;
+  default_step_covariance[4] *= 40.0;
+  default_step_covariance[5] *= 40.0;
 
   std::vector<double> initial_noise_covariance = std::vector<double> (6, 0.00001);
   std::vector<double> default_initial_mean = std::vector<double> (6, 0.0);
@@ -269,9 +250,9 @@ int main () {
     (new DistanceCoherence<RefPointType>);
   coherence->addPointCoherence (distance_coherence);
 
-  pcl::search::Octree<RefPointType>::Ptr search (new pcl::search::Octree<RefPointType> (0.01));
+  pcl::search::Octree<RefPointType>::Ptr search (new pcl::search::Octree<RefPointType> (0.1));
   coherence->setSearchMethod (search);
-  coherence->setMaximumDistance (0.01);
+  coherence->setMaximumDistance (0.1);
 
   tracker_->setCloudCoherence (coherence);
 
@@ -292,15 +273,16 @@ int main () {
 
 //===========================================
   int frameCount = 0; 
-  int maxFrames = 500;
+  int maxFrames = 1000;
   // frameCount++;
+
 
   truthOutput.open("../analysis/truth.txt");
   guessOutput.open("../analysis/guess.txt");
 
   while (frameCount < maxFrames) {
       target_cloud.reset (new Cloud);
-      if (pcl::io::loadPCDFile<RefPointType> ("../movement/frame_" + std::to_string(0) + ".pcd", *target_cloud) == -1) {
+      if (pcl::io::loadPCDFile<RefPointType> ("../data/frame_" + std::to_string(frameCount) + ".pcd", *target_cloud) == -1) {
       PCL_ERROR ("Could not read PCD file \n");
       return -1; 
     }

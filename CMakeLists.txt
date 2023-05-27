@@ -14,12 +14,9 @@ add_executable(tracking src/imu.hpp src/imu.cpp
                  src/main.cpp)
 target_link_libraries(tracking ${PCL_LIBRARIES})
 
-# Executable for tutorial of tracking 
+# Executable for tutorial of tracking
 add_executable(example examples/tracking_example.cpp examples/tracking_example.cpp)
 target_link_libraries(example ${PCL_LIBRARIES})
-
-add_executable(kilian kilian/pointcloud_tracking.hpp kilian/pointcloud_tracking.cpp kilian/main.cpp)
-target_link_libraries(kilian ${PCL_LIBRARIES})
-
-# add_executable(load_cloud examples/load_cloud.cpp)                
-# target_link_libraries(load_cloud ${PCL_LIBRARIES})
+#
+#add_executable(kilian kilian/pointcloud_tracking.hpp kilian/pointcloud_tracking.cpp kilian/main.cpp)
+#target_link_libraries(kilian ${PCL_LIBRARIES})
