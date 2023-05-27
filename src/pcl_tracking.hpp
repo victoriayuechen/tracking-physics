@@ -72,7 +72,6 @@ protected:
     pcl::tracking::KLDAdaptiveParticleFilterOMPTracker<RefPointType, Particle>::Ptr tracker;
     pcl::PointCloud<pcl::PointXYZ>::Ptr getParticles();
 
-    void downSample();
     Eigen::Matrix4f cameraCorrection;
 public:
     // For managing the video frames
@@ -92,11 +91,9 @@ public:
                        float binSizeDimensions);
     void setMaxFrame(long maxFrame);
     void writePredictions(std::string& truthFile, std::string& guessFile);
-    Eigen::Matrix4f changeBasis(pcl::PointCloud<RefPointType>::Ptr &cloud);
 };
 
 class VirtualCamera : public BaseTracker {
     public:
-        void incrementFrame();
         void initializeCamera(std::string& outputDir, long frameMax, bool save);
 };
