@@ -75,6 +75,10 @@ public:
     long frameCount;
     long frameMax;
 
+    // For measuring execution time
+    double trackingTime;
+    double setupTime;
+
     // Filtering applied at each frame
     void cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &cloud);
 
