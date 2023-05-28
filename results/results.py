@@ -8,6 +8,7 @@ particles = time_test['PARTICLES']
 setup = time_test['SETUP']
 tracking = time_test['TRACKING']
 total = time_test['TOTAL']
+frame = time_test['FRAME']
 
 fig1 = plt.figure(1)
 
@@ -30,6 +31,11 @@ plt.xlabel("Number of particles")
 plt.ylabel("Total time (in ms)")
 plt.title("Total time based on number of particles")
 
+fig4 = plt.figure(4)
+plt.plot(particles, frame, 'r', lw=3, label= "Time per frame")
+plt.xlabel("Number of particles")
+plt.ylabel("Time per frame (in ms)")
+plt.title("Time per frame based on number of particles")
 
 plt.show()
 
