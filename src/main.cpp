@@ -2,9 +2,9 @@
 #include "pcl_tracking.hpp"
 
 int main() {
-    // Variables used for tracker
-    float downSampleSize = 0.02f;
-    int particleCount = 250;
+// Variables used for tracker
+    float downSampleSize = 0.10f;
+    int particleCount = 1000;
     double variance = 0.025;
     float delta = 0.99f;
     float epsilon = 0.02f;
@@ -13,15 +13,15 @@ int main() {
 
     //  File directories to use
     std::string resultDir = ".."; // not used as of now
-    std::string experiment = "timing/";
-    std::string targetModel = "";
-    std::string truthFileName = "../analysis/results/truth-pNum-suzanne.txt";
-    std::string guessFileName = "../analysis/results/guess-pNum-suzanne-p5.txt";
+    std::string experiment = "translation/";
+    std::string targetModel = "suzanne";
+    std::string truthFileName = "../analysis/results/truth-exp4-suzanne.txt";
+    std::string guessFileName = "../analysis/results/guess-exp4-suzanne-p1.txt";
     std::ofstream timingFile;
-    timingFile.open("../analysis/results/timing-250.txt"); 
+    timingFile.open("../analysis/results/timing-ds-5.txt"); 
 
     // Maximum number of frames that are processed
-    long maxFrames = 800;
+    long maxFrames = 1000;
 
     // Start up the tracker
     VirtualCamera tracker = VirtualCamera();

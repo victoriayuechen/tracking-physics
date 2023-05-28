@@ -5,8 +5,8 @@ import numpy as np
 
 # Find the experiment type 
 experiment_type = sys.argv[1]
-truth = pd.read_csv('results/truth-exp3-bunny.txt', delimiter=',').to_numpy()
-guess_1000 = pd.read_csv('results/guess-exp3-bunny.txt', delimiter=',').to_numpy()
+truth = pd.read_csv('results/truth-exp2-suzanne.txt', delimiter=',').to_numpy()
+guess_1000 = pd.read_csv('results/guess-exp2-suzanne.txt', delimiter=',').to_numpy()
 
 # Euclidean distance between the centroids
 dist_1000 = np.linalg.norm((truth - guess_1000), axis=1)
@@ -18,3 +18,16 @@ plt.title('L2 norm between actual centroid and predicted centroid')
 plt.legend()
 plt.savefig('plots/performance-{experiment}.png'.format(experiment=experiment_type))
 plt.show()
+
+# delta_x_actual = truth[:, 0]
+# delta_x_pred = guess_1000[:, 0]
+
+# plt.plot(range(len(truth)), delta_x_actual, label='Actual x Movement')
+# plt.plot(range(len(truth)), delta_x_pred, label='Predicted x Movement')
+
+# plt.ylabel('X-position')
+# plt.xlabel('Number of frames processed')
+# plt.title('Movement along X-axis in Sin-Wave Motion')
+# plt.legend()
+# plt.savefig('plots/sin-wave-suzanne-{experiment}.png'.format(experiment=experiment_type))
+# plt.show()
