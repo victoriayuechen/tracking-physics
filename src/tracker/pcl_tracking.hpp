@@ -33,21 +33,42 @@ typedef pcl::PointXYZRGBA RefPointType; // actual type of the points in cloud
 typedef pcl::tracking::ParticleXYZRPY Particle;  // type of the points that will be used in tracking 
 typedef pcl::tracking::ParticleFilterTracker<RefPointType, Particle> ParticleFilter;
 
+// Parameters used for the particle filter
+struct FilterParams {
+    float downSampleSize;
+    int particleCount;
+    double variance;
+    float delta;
+    float epsilon;
+    float binSize;
+    double coherenceLimit;
+    bool downSample;
+
+    // Sets default params, may not work for all models/motion
+    void setDefault() {
+        this->downSampleSize = 0.02f;
+        this->particleCount = 1000;
+        this->variance = 0.025;
+        this->delta = 0.99f;
+        this->epsilon = 0.02f;
+        this->binSize = 0.1f;
+        this->coherenceLimit = 0.1;
+        this->downSample = true;
+    }
+};
+
 class BaseTracker {
 private:
     std::mutex trackingMutex;
-
     std::ofstream truthOutput;
     std::ofstream guessOutput;
-    float downsampleGridSize;
-    float delta;
-    float epsilon;
 
     static inline std::vector<double> initialNoiseMean = std::vector<double>(6, INITIAL_NOISE_MEAN);
     static inline std::vector<double> initialNoiseCovariance = std::vector<double>(6, INITIAL_NOISE_COVARIANCE);
 
     void runRANSAC(const pcl::PointCloud<RefPointType>::ConstPtr &cloud);
-    void initializeKLDFilter(float binSize, int numParticles, double variance, float delta, float epsilon);
+    void initializeKLDFilter();
+    FilterParams params;
 
 protected:
     // Saving the resulting point cloud predictions
@@ -79,18 +100,13 @@ public:
     void cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &cloud);
 
     // Sets up the filter and algorithm parameters
-    void setDownsampleSize(float size);
-    void setUpTracking(const std::string& modelLoc,
-                       int numParticles,
-                       double variance,
-                       float delta,
-                       float epsilon,
-                       float binSizeDimensions);
+    void setUpTracking(const std::string& modelLoc, FilterParams& params);
     void setMaxFrame(long maxFrame);
     void writePredictions(std::string& truthFile, std::string& guessFile);
+    pcl::PointCloud<RefPointType>::Ptr getPredictedCloud();
 };
 
 class VirtualCamera : public BaseTracker {
     public:
-        void initializeCamera(std::string& outputDir, long frameMax, bool save);
+        void initializeCamera(long frameMax, bool save);
 };

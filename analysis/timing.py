@@ -12,7 +12,7 @@ actual_time = np.ones(len(tracking_time_1)) * (1 / 60)
 ds_level = [0.00, 0.01, 0.04, 0.08, 0.10]
 
 times = [tracking_time_1, tracking_time_2, tracking_time_3, tracking_time_4, tracking_time_5]
-for i in range(len(times)):
+for i in range(len(ds_level)):
     plot_tracking = np.cumsum((1 / 1000) * times[i])
     plt.plot(range(0, len(plot_tracking)), plot_tracking, label='Tracking Time - Downsample = {ds:.3f}'.format(ds=ds_level[i]))
     plot_tracking[0] = 0 

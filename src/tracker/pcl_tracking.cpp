@@ -20,10 +20,6 @@ pcl::PointXYZ getCenter(pcl::PointCloud<RefPointType>::Ptr& cloud) {
     return center;
 }
 
-void BaseTracker::setDownsampleSize(float size) {
-    this->downsampleGridSize = size; 
-}
-
 void BaseTracker::setMaxFrame(long maxFrame) {
     this->frameMax = maxFrame;
 }
@@ -39,10 +35,7 @@ std::vector<double> getStepNoiseCovariance(double variance) {
 }
 
 // Initializes the KLD filter to be used
-void BaseTracker::initializeKLDFilter(float binSize, int numParticles, double variance, float delta, float epsilon) {
-    this->delta = delta;
-    this->epsilon = epsilon;
-
+void BaseTracker::initializeKLDFilter() {
     // Initialise KLD Filter
     KLDAdaptiveParticleFilterOMPTracker<RefPointType, Particle>::Ptr kldFilter(new KLDAdaptiveParticleFilterOMPTracker<RefPointType, Particle> (N_THREADS));
 
@@ -51,34 +44,30 @@ void BaseTracker::initializeKLDFilter(float binSize, int numParticles, double va
 
     // Meta-parameters for KLD sampling algorithm, dictates the properties of sampling distribution
     Particle bin;
-    bin.x = bin.y = bin.z = bin.roll = bin.yaw = bin.pitch = binSize;
-    this->tracker->setMaximumParticleNum(numParticles);
-    this->tracker->setDelta(this->delta);
-    this->tracker->setEpsilon(this->epsilon);
+    bin.x = bin.y = bin.z = bin.roll = bin.yaw = bin.pitch = this->params.binSize;
+    this->tracker->setMaximumParticleNum(this->params.particleCount);
+    this->tracker->setDelta(this->params.delta);
+    this->tracker->setEpsilon(this->params.epsilon);
     this->tracker->setBinSize(bin);
 
     // Parameters for KLD in each iteration
     this->tracker->setTrans(Eigen::Affine3f::Identity());
     this->tracker->setIterationNum(1);
-    this->tracker->setParticleNum(numParticles);
+    this->tracker->setParticleNum(this->params.particleCount);
     this->tracker->setResampleLikelihoodThr(0.0);
     this->tracker->setUseNormal(false);
 
     // Parameters used when resampling new particles
     this->tracker->setInitialNoiseCovariance(initialNoiseCovariance);
     this->tracker->setInitialNoiseMean(initialNoiseMean);
-    this->tracker->setStepNoiseCovariance(getStepNoiseCovariance(variance));
+    this->tracker->setStepNoiseCovariance(getStepNoiseCovariance(this->params.variance));
 }
 
 // Sets up the tools needed for tracking: KLD filter, downsampling, NN search
-void BaseTracker::setUpTracking(const std::string& modelLoc,
-                                int numParticles,
-                                double variance,
-                                float delta,
-                                float epsilon,
-                                float binSizeDimensions) {
+void BaseTracker::setUpTracking(const std::string& modelLoc, FilterParams& paramsInput) {
     // Initialize the KLD Filter
-    this->initializeKLDFilter(binSizeDimensions, numParticles, variance, delta, epsilon);
+    this->params = paramsInput;
+    this->initializeKLDFilter();
 
     // Get the initial target cloud
     this->objectCloud.reset(new pcl::PointCloud<RefPointType>());
@@ -90,11 +79,11 @@ void BaseTracker::setUpTracking(const std::string& modelLoc,
     // Set up coherence for point cloud tracking
     ApproxNearestPairPointCloudCoherence<RefPointType>::Ptr coherence (new ApproxNearestPairPointCloudCoherence<RefPointType>);
     DistanceCoherence<RefPointType>::Ptr distCoherence (new DistanceCoherence<RefPointType>);
-    pcl::search::Octree<RefPointType>::Ptr search (new pcl::search::Octree<RefPointType> (COHERENCE_LIMIT));
+    pcl::search::Octree<RefPointType>::Ptr search (new pcl::search::Octree<RefPointType> (params.coherenceLimit));
     coherence->setTargetCloud(this->objectCloud);
     coherence->addPointCoherence(distCoherence);
     coherence->setSearchMethod(search);
-    coherence->setMaximumDistance(COHERENCE_LIMIT);
+    coherence->setMaximumDistance(params.coherenceLimit);
 
     // Prepare the model of the tracker's target
     Eigen::Vector4f objectCentroid; 
@@ -104,10 +93,12 @@ void BaseTracker::setUpTracking(const std::string& modelLoc,
     pcl::transformPointCloud<RefPointType>(*this->objectCloud, *this->objectCloud, translateModel.inverse());
 
     // Downsample the target cloud
-    pcl::ApproximateVoxelGrid<RefPointType> grid;
-    grid.setLeafSize(downsampleGridSize, downsampleGridSize, downsampleGridSize);
-    grid.setInputCloud(this->objectCloud);
-    grid.filter(*this->objectCloud);
+    if (this->params.downSample) {
+        pcl::ApproximateVoxelGrid<RefPointType> grid;
+        grid.setLeafSize(this->params.downSampleSize, this->params.downSampleSize, this->params.downSampleSize);
+        grid.setInputCloud(this->objectCloud);
+        grid.filter(*this->objectCloud);
+    }
 
     // Set params for KLD Filter
     this->tracker->setCloudCoherence(coherence);
@@ -154,10 +145,12 @@ void BaseTracker::cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &c
     pass.filter(*this->objectCloud);
 
     // Down sampling
-    pcl::ApproximateVoxelGrid<RefPointType> grid;
-    grid.setLeafSize(downsampleGridSize, downsampleGridSize, downsampleGridSize);
-    grid.setInputCloud(this->objectCloud);
-    grid.filter(*this->objectCloud);
+    if (this->params.downSample) {
+        pcl::ApproximateVoxelGrid<RefPointType> grid;
+        grid.setLeafSize(this->params.downSampleSize, this->params.downSampleSize, this->params.downSampleSize);
+        grid.setInputCloud(this->objectCloud);
+        grid.filter(*this->objectCloud);
+    }
 
     // Update the cloud being tracked 
     this->tracker->setInputCloud(this->objectCloud);
@@ -212,6 +205,17 @@ void BaseTracker::savePointCloud() {
     }
 }
 
+// Returns the predicted point cloud
+pcl::PointCloud<RefPointType>::Ptr BaseTracker::getPredictedCloud() {
+    Particle state = this->tracker->getResult();
+
+    Eigen::Affine3f transformation = this->tracker->toEigenMatrix(state);
+    pcl::PointCloud<RefPointType>::Ptr resultCloud (new pcl::PointCloud<RefPointType>);
+    pcl::transformPointCloud<RefPointType> (*(this->tracker->getReferenceCloud()), *resultCloud, transformation);
+
+    return resultCloud;
+}
+
 // Sets the files in which to write the predictions and truth values
 void BaseTracker::writePredictions(std::string &truthFile, std::string &guessFile) {
     this->truthOutput.open(truthFile);
@@ -226,9 +230,8 @@ void BaseTracker::writePredictions(std::string &truthFile, std::string &guessFil
 }
 
 // Set up for finding the frames of PCD files
-void VirtualCamera::initializeCamera(std::string& outputDir, long frameMax, bool save) {
+void VirtualCamera::initializeCamera(long frameMax, bool save) {
     this->frameCount = 0L;
     this->frameMax = frameMax;
     this->save = save;
-    this->outputDir = outputDir;
 }
