@@ -7,5 +7,5 @@ fi
 
 
 echo "Creating plots for experiment $1"
-cd analysis 
+cd ../analysis 
 python3 analysis.py "$1"

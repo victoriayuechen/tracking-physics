@@ -25,7 +25,6 @@
 
 #define INITIAL_NOISE_COVARIANCE 0.00001
 #define INITIAL_NOISE_MEAN 0.0
-#define COHERENCE_LIMIT 0.1
 #define N_THREADS 1
 
 using namespace std::chrono_literals;
@@ -67,7 +66,6 @@ private:
     static inline std::vector<double> initialNoiseCovariance = std::vector<double>(6, INITIAL_NOISE_COVARIANCE);
 
     void runRANSAC(const pcl::PointCloud<RefPointType>::ConstPtr &cloud);
-    void initializeKLDFilter();
     FilterParams params;
 
 protected:
@@ -100,7 +98,8 @@ public:
     void cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &cloud);
 
     // Sets up the filter and algorithm parameters
-    void setUpTracking(const std::string& modelLoc, FilterParams& params);
+    void initializeKLDFilter(FilterParams& inputParams);
+    void setUpTracking(const std::string& modelLoc);
     void setMaxFrame(long maxFrame);
     void writePredictions(std::string& truthFile, std::string& guessFile);
     pcl::PointCloud<RefPointType>::Ptr getPredictedCloud();

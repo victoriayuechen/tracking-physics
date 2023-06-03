@@ -28,7 +28,8 @@ int main() {
     // Start up the tracker
     VirtualCamera tracker = VirtualCamera();
     tracker.initializeCamera(maxFrames, save);
-    tracker.setUpTracking("../tests/" + experiment + targetModel + "/frame_0.pcd", params);
+    tracker.initializeKLDFilter(params);
+    tracker.setUpTracking("../tests/" + experiment + targetModel + "/frame_0.pcd");
 
     // Load all frames
     pcl::PointCloud<RefPointType>::Ptr cloud (new pcl::PointCloud<RefPointType>);

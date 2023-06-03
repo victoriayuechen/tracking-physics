@@ -17,3 +17,8 @@ target_link_libraries(tracking ${PCL_LIBRARIES})
 add_executable(timing src/tracker/pcl_tracking.hpp src/tracker/pcl_tracking.cpp
         src/experiments/timing.cpp)
 target_link_libraries(timing ${PCL_LIBRARIES})
+
+# Executable for setting up the network
+add_executable(network src/network/communication.hpp src/network/communication.cpp
+        src/network/run_network.cpp)
+target_link_libraries(network ${PCL_LIBRARIES})

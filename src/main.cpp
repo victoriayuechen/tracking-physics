@@ -26,7 +26,8 @@ int main() {
     // Start up the tracker
     VirtualCamera tracker = VirtualCamera();
     tracker.initializeCamera(maxFrames, save);
-    tracker.setUpTracking("../tests/" + experiment + targetModel + "/frame_0.pcd", params);
+    tracker.initializeKLDFilter(params);
+    tracker.setUpTracking("../tests/" + experiment + targetModel + "/frame_0.pcd");
     tracker.writePredictions(truthFileName, guessFileName);
 
     // Load all frames 

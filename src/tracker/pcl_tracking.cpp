@@ -35,7 +35,8 @@ std::vector<double> getStepNoiseCovariance(double variance) {
 }
 
 // Initializes the KLD filter to be used
-void BaseTracker::initializeKLDFilter() {
+void BaseTracker::initializeKLDFilter(FilterParams& inputParams) {
+    this->params = inputParams;
     // Initialise KLD Filter
     KLDAdaptiveParticleFilterOMPTracker<RefPointType, Particle>::Ptr kldFilter(new KLDAdaptiveParticleFilterOMPTracker<RefPointType, Particle> (N_THREADS));
 
@@ -64,11 +65,7 @@ void BaseTracker::initializeKLDFilter() {
 }
 
 // Sets up the tools needed for tracking: KLD filter, downsampling, NN search
-void BaseTracker::setUpTracking(const std::string& modelLoc, FilterParams& paramsInput) {
-    // Initialize the KLD Filter
-    this->params = paramsInput;
-    this->initializeKLDFilter();
-
+void BaseTracker::setUpTracking(const std::string& modelLoc) {
     // Get the initial target cloud
     this->objectCloud.reset(new pcl::PointCloud<RefPointType>());
     if(pcl::io::loadPCDFile<pcl::PointXYZRGBA>(modelLoc, *objectCloud) == -1) {
