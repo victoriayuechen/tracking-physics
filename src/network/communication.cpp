@@ -1,79 +1,121 @@
 #include "communication.hpp"
 
-// Given the buffer, creates a point cloud and saves it to file
-// Returns the name of the file that contains the first scan of the cloud
-std::string makePointCloud(char* buffer) {
-
-}
 
 // Connects the communicator to the specified port and gives the target address
-bool Communicator::setUpConnection(int port, std::string& ipAddress) {
-    // Create socket
-    this->server_fd = socket(AF_LOCAL, SOCK_STREAM, 0);
-    if (this->server_fd < 0) {
-        std::cerr << "Socket creation failed!" << std::endl;
+bool Updator::setUpConnection(int myPort, int otherPort) {
+    // Create own socket
+    this->mySocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+    // Specify own address and port
+    this->my_address.sin_family = AF_INET;
+    this->my_address.sin_addr.s_addr = inet_addr(localhost);
+    this->my_address.sin_port = htons(myPort);
+
+    // Bind port and own address for receiving/sending
+    if ((bind(mySocket, (struct sockaddr*)&this->my_address, sizeof(this->my_address))) < 0) {
+        std::cout << "Binding own port and address failed" << std::endl;
         return false;
     }
 
-    // Set options for the socket
-    if(!setsockopt(this->server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
-                   &this->enableOpt, sizeof(int))) {
-        std::cerr << "Setting options for socket failed" << std::endl;
+    // Specify address and port for target (send or receive)
+    this->other_address.sin_family = AF_INET;
+    this->other_address.sin_addr.s_addr = inet_addr(localhost);
+    this->other_address.sin_port = htons(otherPort);
+
+    return true;
+}
+
+void Updator::endConnection() const {
+    shutdown(this->mySocket, SHUT_RDWR);
+}
+
+void Communicator::setUpCommunication() {
+    bool cloudSetUp = cloudGrabber.setUpConnection(PCD_PCL, PCD_UNITY);
+    bool posSetUp = posUpdator.setUpConnection(POS_PCL, POS_UNITY);
+
+    std::cout << "Finish set up! " << std::endl;
+    if (!cloudSetUp || !posSetUp) {
+        std::cout << "Communication set up failed!" << std::endl;
+    }
+}
+
+void Communicator::sendPosUpdates() {
+    socklen_t targetAddrLen = sizeof(this->posUpdator.other_address);
+
+    while (this->running) {
+//        auto xyzrpyUpdate = this->camera.getResult();
+//        char message[MESSAGE_SIZE];
+//        xyzrpyUpdate.copy(message, strlen(xyzrpyUpdate.c_str()));
+        auto message = "centroid";
+
+        if ((sendto(this->posUpdator.mySocket, message, strlen(message), 0, (struct sockaddr*)&this->posUpdator.other_address, targetAddrLen)) < 0) {
+            std::cout << "Didn't send! " << std::endl;
+        }
+    }
+}
+
+void Communicator::getNewPCD() {
+    socklen_t targetAddrLen = sizeof(this->cloudGrabber.other_address);
+
+    while (this->running) {
+        memset(this->buffer, 0, sizeof(this->buffer));
+        pcl::PointCloud<RefPointType>::Ptr cloud (new pcl::PointCloud<RefPointType>);
+
+        if ((recvfrom(this->cloudGrabber.mySocket, this->buffer, strlen(this->buffer), 0, (struct sockaddr*)&this->cloudGrabber.other_address, &targetAddrLen)) < 0) {
+            std::cerr << "Could not receive the full point cloud successfully" << std::endl;
+        }
+
+        // Write PCD to file and continue tracking
+        std::string fileName = "../data/frame_" + std::to_string(this->camera.frameCount) + ".pcd";
+        std::ofstream pcdFile = std::ofstream(fileName);
+        pcdFile << buffer;
+
+        if (pcl::io::loadPCDFile<RefPointType> (fileName, *cloud) == -1) {
+            PCL_ERROR ("Could not read PCD file \n");
+        }
+
+        this->camera.cloudCallBack(cloud);
+    }
+}
+
+bool Communicator::initializeFilter(FilterParams &params) {
+    std::ofstream initCloud = std::ofstream ("../data/frame_0.pcd");
+
+    // Initialize the camera used for tracking
+    this->camera.initializeKLDFilter(params);
+    socklen_t addrlen = sizeof(this->cloudGrabber.other_address);
+
+    // Receive the first point cloud (blocking)
+    if ((recvfrom(this->cloudGrabber.mySocket, this->buffer, strlen(this->buffer), 0, (struct sockaddr*)&this->cloudGrabber.other_address, &addrlen)) < 0) {
+        std::cerr << "Could not receive the full point cloud successfully" << std::endl;
         return false;
     }
 
-    // Bind the socket to the port
-    this->address.sin_family = AF_INET;
-    this->address.sin_addr.s_addr = inet_addr(ipAddress.c_str());
-    this->address.sin_port = htons(port);
-    if (bind(this->server_fd, (const struct sockaddr *)&(this->address), sizeof(this->address)) < 0) {
-        std::cerr << "Binding to port failed" << std::endl;
+    if (!initCloud.is_open()) {
+        std::cerr << "Could not write to file" << std::endl;
         return false;
     }
 
+    // KLD filter fully set up after given initial cloud
+    initCloud << buffer;
+    this->camera.setUpTracking("../data/frame_0.pcd");
     this->running = true;
 
     return true;
 }
 
-void Communicator::startConnection(FilterParams& params) {
-    this->camera.initializeKLDFilter(params);
+void Communicator::run() {
+   // std::thread getClouds = std::thread(&Communicator::getNewPCD, this);
+   this->running = true;
+   std::thread sendUpdates = std::thread(&Communicator::sendPosUpdates, this);
 
-    // Start listening to the port
-    listen(this->server_fd, 2);
-
-    if ((this->unity_fd = accept(server_fd, (struct sockaddr*)&this->address, (socklen_t*)sizeof(this->address))) < 0) {
-        std::cout << "Couldn't accept incoming connections" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    while (this->running) {
-        if (this->messageCount < 1) {
-            // Use the first frame (correct initial state) to set up tracking
-            read(this->unity_fd, this->buffer, BUFFER_SIZE);
-            std::string initModel = makePointCloud(this->buffer);
-            this->camera.setUpTracking(initModel);
-
-            this->messageCount++;
-        }
-
-        // Load cloud into file, or load in the cloud completely
-        read(this->unity_fd, this->buffer, BUFFER_SIZE);
-        std::string modelLoc = makePointCloud(this->buffer);
-        pcl::PointCloud<RefPointType>::Ptr cloud (new pcl::PointCloud<RefPointType>);
-
-        if (pcl::io::loadPCDFile<RefPointType> (modelLoc, *cloud) == -1) {
-            PCL_ERROR ("Could not read PCD file \n");
-        }
-        this->camera.cloudCallBack(cloud);
-
-        // TODO: Make prediction for the position for the next cloud
-
-        this->messageCount++;
-    }
+   // getClouds.detach();
+    sendUpdates.detach();
 }
 
-void Communicator::endConnection() {
+void Communicator::stop() {
     this->running = false;
-    shutdown(this->server_fd, SHUT_RDWR);
+    this->cloudGrabber.endConnection();
+    this->posUpdator.endConnection();
 }
+

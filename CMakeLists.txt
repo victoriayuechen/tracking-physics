@@ -20,5 +20,10 @@ target_link_libraries(timing ${PCL_LIBRARIES})
 
 # Executable for setting up the network
 add_executable(network src/network/communication.hpp src/network/communication.cpp
+        src/tracker/pcl_tracking.hpp src/tracker/pcl_tracking.cpp
         src/network/run_network.cpp)
 target_link_libraries(network ${PCL_LIBRARIES})
+
+# Dummy applications that "acts" like Unity engine (Testing purposes)
+add_executable(dummy_unity_pos src/network/dummy_unity_pos.cpp)
+add_executable(dummy_unity_pcd src/network/dummy_unity_pcd.cpp)

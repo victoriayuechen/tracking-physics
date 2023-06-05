@@ -226,6 +226,19 @@ void BaseTracker::writePredictions(std::string &truthFile, std::string &guessFil
     }
 }
 
+std::string BaseTracker::getResult() {
+    auto result = this->tracker->getResult();
+
+    std::string xyzrpy = std::to_string(result[0]) + ","
+            + std::to_string(result[1]) + ","
+            + std::to_string(result[2]) + ","
+            + std::to_string(result[3]) + ","
+            + std::to_string(result[4]) + ","
+            + std::to_string(result[5]);
+
+    return xyzrpy;
+}
+
 // Set up for finding the frames of PCD files
 void VirtualCamera::initializeCamera(long frameMax, bool save) {
     this->frameCount = 0L;

@@ -103,6 +103,7 @@ public:
     void setMaxFrame(long maxFrame);
     void writePredictions(std::string& truthFile, std::string& guessFile);
     pcl::PointCloud<RefPointType>::Ptr getPredictedCloud();
+    std::string getResult();
 };
 
 class VirtualCamera : public BaseTracker {
