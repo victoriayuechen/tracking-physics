@@ -33,7 +33,6 @@ void Communicator::setUpCommunication() {
     bool cloudSetUp = cloudGrabber.setUpConnection(PCD_PCL, PCD_UNITY);
     bool posSetUp = posUpdator.setUpConnection(POS_PCL, POS_UNITY);
 
-    std::cout << "Finish set up! " << std::endl;
     if (!cloudSetUp || !posSetUp) {
         std::cout << "Communication set up failed!" << std::endl;
     }
@@ -43,10 +42,9 @@ void Communicator::sendPosUpdates() {
     socklen_t targetAddrLen = sizeof(this->posUpdator.other_address);
 
     while (this->running) {
-//        auto xyzrpyUpdate = this->camera.getResult();
-//        char message[MESSAGE_SIZE];
-//        xyzrpyUpdate.copy(message, strlen(xyzrpyUpdate.c_str()));
-        auto message = "centroid";
+        auto xyzrpyUpdate = this->camera.getResult();
+        char message[MESSAGE_SIZE];
+        xyzrpyUpdate.copy(message, strlen(xyzrpyUpdate.c_str()));
 
         if ((sendto(this->posUpdator.mySocket, message, strlen(message), 0, (struct sockaddr*)&this->posUpdator.other_address, targetAddrLen)) < 0) {
             std::cout << "Didn't send! " << std::endl;
@@ -61,7 +59,7 @@ void Communicator::getNewPCD() {
         memset(this->buffer, 0, sizeof(this->buffer));
         pcl::PointCloud<RefPointType>::Ptr cloud (new pcl::PointCloud<RefPointType>);
 
-        if ((recvfrom(this->cloudGrabber.mySocket, this->buffer, strlen(this->buffer), 0, (struct sockaddr*)&this->cloudGrabber.other_address, &targetAddrLen)) < 0) {
+        if ((recvfrom(this->cloudGrabber.mySocket, this->buffer, sizeof(this->buffer) - 1, 0, (struct sockaddr*)&this->cloudGrabber.other_address, &targetAddrLen)) < 0) {
             std::cerr << "Could not receive the full point cloud successfully" << std::endl;
         }
 
@@ -69,6 +67,7 @@ void Communicator::getNewPCD() {
         std::string fileName = "../data/frame_" + std::to_string(this->camera.frameCount) + ".pcd";
         std::ofstream pcdFile = std::ofstream(fileName);
         pcdFile << buffer;
+        pcdFile.flush(); // TODO: check if there is a better way
 
         if (pcl::io::loadPCDFile<RefPointType> (fileName, *cloud) == -1) {
             PCL_ERROR ("Could not read PCD file \n");
@@ -83,11 +82,12 @@ bool Communicator::initializeFilter(FilterParams &params) {
 
     // Initialize the camera used for tracking
     this->camera.initializeKLDFilter(params);
-    socklen_t addrlen = sizeof(this->cloudGrabber.other_address);
+    socklen_t targetAddrLen = sizeof(this->cloudGrabber.other_address);
+    memset(this->buffer, 0, sizeof(buffer));
 
     // Receive the first point cloud (blocking)
-    if ((recvfrom(this->cloudGrabber.mySocket, this->buffer, strlen(this->buffer), 0, (struct sockaddr*)&this->cloudGrabber.other_address, &addrlen)) < 0) {
-        std::cerr << "Could not receive the full point cloud successfully" << std::endl;
+    if ((recvfrom(this->cloudGrabber.mySocket, this->buffer, sizeof(this->buffer) - 1, 0, (struct sockaddr*)&this->cloudGrabber.other_address, &targetAddrLen)) <= 0) {
+        std::cout << "Could not receive the full point cloud successfully" << std::endl;
         return false;
     }
 
@@ -98,6 +98,7 @@ bool Communicator::initializeFilter(FilterParams &params) {
 
     // KLD filter fully set up after given initial cloud
     initCloud << buffer;
+    initCloud.flush();
     this->camera.setUpTracking("../data/frame_0.pcd");
     this->running = true;
 
@@ -105,12 +106,11 @@ bool Communicator::initializeFilter(FilterParams &params) {
 }
 
 void Communicator::run() {
-   // std::thread getClouds = std::thread(&Communicator::getNewPCD, this);
-   this->running = true;
+   std::thread getClouds = std::thread(&Communicator::getNewPCD, this);
    std::thread sendUpdates = std::thread(&Communicator::sendPosUpdates, this);
 
-   // getClouds.detach();
-    sendUpdates.detach();
+   getClouds.detach();
+   sendUpdates.detach();
 }
 
 void Communicator::stop() {

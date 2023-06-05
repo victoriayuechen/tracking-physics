@@ -4,10 +4,11 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-
 #include "../tracker/pcl_tracking.hpp"
-#define BUFFER_SIZE 4096
-#define MESSAGE_SIZE 200
+
+// BUFFER is for receiving PCDs and MESSAGE is for sending position updates
+#define BUFFER_SIZE 30000
+#define MESSAGE_SIZE 20
 
 // PCL sends updates here
 #define POS_PCL 8080
@@ -20,10 +21,10 @@
 // The IP used by all
 #define localhost "127.0.0.1"
 
-
 /**
- * Listens to physics engine for incoming PCD and sends
- * updated predictions of the point cloud tracker
+ * Class for setting up communication endpoint with Unity
+ * Has own port and the target port through which it can send/receive data
+ * using the UDP protocol.
  */
 class Updator {
 public:
@@ -33,7 +34,11 @@ public:
     void endConnection() const;
 };
 
-
+/**
+ * Responsible for communication loop with Unity for tracking.
+ * Takes PCDs from the Unity engine and tracks it
+ * Two channels for receiving PCDs and for sending position updates
+ */
 class Communicator {
 private:
     VirtualCamera camera;

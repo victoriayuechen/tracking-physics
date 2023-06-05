@@ -14,11 +14,7 @@ int main() {
     };
 
     communicator.setUpCommunication();
-
-//    if (! com.initializeFilter(params)) {
-//        return EXIT_FAILURE;
-//    }
-
+    communicator.initializeFilter(params);
     communicator.run();
 
     // Continue until Enter is clicked

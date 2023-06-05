@@ -25,5 +25,5 @@ add_executable(network src/network/communication.hpp src/network/communication.c
 target_link_libraries(network ${PCL_LIBRARIES})
 
 # Dummy applications that "acts" like Unity engine (Testing purposes)
-add_executable(dummy_unity_pos src/network/dummy_unity_pos.cpp)
-add_executable(dummy_unity_pcd src/network/dummy_unity_pcd.cpp)
+add_executable(dummy_unity_pos src/network/mock_unity/dummy_unity_pos.cpp)
+add_executable(dummy_unity_pcd src/network/mock_unity/dummy_unity_pcd.cpp)
