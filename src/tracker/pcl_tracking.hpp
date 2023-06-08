@@ -51,7 +51,7 @@ struct FilterParams {
         this->delta = 0.99f;
         this->epsilon = 0.02f;
         this->binSize = 0.1f;
-        this->coherenceLimit = 0.1;
+        this->coherenceLimit = 0.01;
         this->downSample = true;
     }
 };
@@ -102,7 +102,7 @@ public:
     void setUpTracking(const std::string& modelLoc);
     void setMaxFrame(long maxFrame);
     void writePredictions(std::string& truthFile, std::string& guessFile);
-    pcl::PointCloud<RefPointType>::Ptr getPredictedCloud();
+    pcl::PointXYZ getPredictedCentroid();
     std::string getResult();
 };
 

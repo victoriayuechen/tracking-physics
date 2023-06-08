@@ -5,8 +5,8 @@ import numpy as np
 
 # Find the experiment type 
 experiment_type = sys.argv[1]
-truth = pd.read_csv('results/truth-noDS-bunny.txt', delimiter=',').to_numpy()
-guess_1000 = pd.read_csv('results/guess-noDS-bunny.txt', delimiter=',').to_numpy()
+truth = pd.read_csv('full-model/true-pos.txt', delimiter=',').to_numpy()
+guess_1000 = pd.read_csv('full-model/guess-partial-1.txt', delimiter=',').to_numpy()
 
 # # Euclidean distance between the centroids
 # dist_1000 = np.linalg.norm((truth - guess_1000), axis=1)
@@ -25,9 +25,11 @@ delta_x_pred = guess_1000[:, 0]
 plt.plot(range(len(truth)), delta_x_actual, label='Actual x Movement')
 plt.plot(range(len(truth)), delta_x_pred, label='Predicted x Movement')
 
+plt.xlim(left=0)
+plt.ylim(bottom=0)
 plt.ylabel('X-position')
 plt.xlabel('Number of frames processed')
-plt.title('Movement along X-axis in Sin-Wave Motion')
+plt.title('Movement along X-axis')
 plt.legend()
-plt.savefig('plots/sin-wave-bunny-{experiment}.png'.format(experiment=experiment_type))
+plt.savefig('full-model/x-pos-{experiment}.png'.format(experiment=experiment_type))
 plt.show()

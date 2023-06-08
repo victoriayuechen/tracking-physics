@@ -90,12 +90,13 @@ void BaseTracker::setUpTracking(const std::string& modelLoc) {
     pcl::transformPointCloud<RefPointType>(*this->objectCloud, *this->objectCloud, translateModel.inverse());
 
     // Downsample the target cloud
-    if (this->params.downSample) {
-        pcl::ApproximateVoxelGrid<RefPointType> grid;
-        grid.setLeafSize(this->params.downSampleSize, this->params.downSampleSize, this->params.downSampleSize);
-        grid.setInputCloud(this->objectCloud);
-        grid.filter(*this->objectCloud);
-    }
+    pcl::ApproximateVoxelGrid<RefPointType> grid;
+    grid.setLeafSize(this->params.downSampleSize, this->params.downSampleSize, this->params.downSampleSize);
+    grid.setInputCloud(this->objectCloud);
+    grid.filter(*this->objectCloud);
+
+    auto centerInit = getCenter(this->objectCloud);
+    std::cout << "Init center: " << centerInit.x << " " << centerInit.y << " " << centerInit.z << std::endl;
 
     // Set params for KLD Filter
     this->tracker->setCloudCoherence(coherence);
@@ -185,32 +186,28 @@ void BaseTracker::savePointCloud() {
     // Gets the particle XYZRPY (centroid of particle cloud)
     Particle state = this->tracker->getResult();
     {
-        std::cout << "Predicted: " << state.x << "," << state.y << "," << state.z << ", " << state.roll << "," << state.pitch << "," << state.yaw << std::endl;
-
-        // Write predicted centroids to file
         std::string out = std::to_string(state.x) + "," + std::to_string(state.y) + "," + std::to_string(state.z) + "\n";
+        std::cout << "Prediction: " << out << std::endl;
+        // Write predicted centroids to file
         this->guessOutput << out;
-    }
-
-    auto center = getCenter(this->objectCloud);
-    {
-         std::cout << "True: " << center.x << " " << center.y << " " << center.z << std::endl;
-
-         // Write true centroids to file
-         std::string out = std::to_string(center.x) + "," + std::to_string(center.y) + "," + std::to_string(center.z) + "\n";
-         this->truthOutput << out;
     }
 }
 
 // Returns the predicted point cloud
-pcl::PointCloud<RefPointType>::Ptr BaseTracker::getPredictedCloud() {
+pcl::PointXYZ BaseTracker::getPredictedCentroid() {
     Particle state = this->tracker->getResult();
+    pcl::PointCloud<RefPointType>::Ptr trueCloud (new pcl::PointCloud<RefPointType>);
+    pcl::PointCloud<RefPointType>::Ptr predictedCloud (new pcl::PointCloud<RefPointType>);
+
+    if(pcl::io::loadPCDFile<pcl::PointXYZRGBA>("../tests/suzanne-1.pcd", *trueCloud) == -1) {
+        std::cout << "Could not find true original model" << std::endl;
+        exit(-1);
+    }
 
     Eigen::Affine3f transformation = this->tracker->toEigenMatrix(state);
-    pcl::PointCloud<RefPointType>::Ptr resultCloud (new pcl::PointCloud<RefPointType>);
-    pcl::transformPointCloud<RefPointType> (*(this->tracker->getReferenceCloud()), *resultCloud, transformation);
+    pcl::transformPointCloud<RefPointType> (*trueCloud, *predictedCloud, transformation);
 
-    return resultCloud;
+    return getCenter(predictedCloud);
 }
 
 // Sets the files in which to write the predictions and truth values
