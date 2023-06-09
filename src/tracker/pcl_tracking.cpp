@@ -188,7 +188,6 @@ void BaseTracker::savePointCloud() {
     {
         std::string out = std::to_string(state.x) + "," + std::to_string(state.y) + "," + std::to_string(state.z) + "\n";
         std::cout << "Prediction: " << out << std::endl;
-        // Write predicted centroids to file
         this->guessOutput << out;
     }
 }
@@ -211,13 +210,9 @@ pcl::PointXYZ BaseTracker::getPredictedCentroid() {
 }
 
 // Sets the files in which to write the predictions and truth values
-void BaseTracker::writePredictions(std::string &truthFile, std::string &guessFile) {
-    this->truthOutput.open(truthFile);
+void BaseTracker::writePredictions(std::string &guessFile) {
     this->guessOutput.open(guessFile);
 
-    if (!truthOutput.is_open()) {
-        this->truthOutput = std::ofstream(truthFile);
-    }
     if (!guessOutput.is_open()) {
         this->guessOutput = std::ofstream(guessFile);
     }

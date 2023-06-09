@@ -16,14 +16,14 @@ int main() {
     // Server address (Address of PCL)
     sockaddr_in serverAddress{};
     serverAddress.sin_family = AF_INET;
-    serverAddress.sin_addr.s_addr = inet_addr("127.0.0.1");  // Connect to localhost
+    serverAddress.sin_addr.s_addr = inet_addr("172.18.128.1");  // Connect to localhost
     serverAddress.sin_port = htons(8080);                   // Use the same port as the server
 
     // Bind the socket to a specific address and port (Address of Unity)
     sockaddr_in unityAddress{};
     unityAddress.sin_family = AF_INET;
-    unityAddress.sin_addr.s_addr = inet_addr("127.0.0.1"); // Bind to any available network interface
-    unityAddress.sin_port = htons(8081);
+    unityAddress.sin_addr.s_addr = inet_addr("172.18.135.177"); // Bind to any available network interface
+    unityAddress.sin_port = htons(8080);
 
     if (bind(unitySocket, (struct sockaddr*)&unityAddress, sizeof(unityAddress)) == -1) {
         std::cout << "Failed to bind socket." << std::endl;

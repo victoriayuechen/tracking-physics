@@ -1,6 +1,5 @@
 #include "communication.hpp"
 
-
 // Connects the communicator to the specified port and gives the target address
 bool Updator::setUpConnection(int myPort, int otherPort) {
     // Create own socket
@@ -8,7 +7,7 @@ bool Updator::setUpConnection(int myPort, int otherPort) {
 
     // Specify own address and port
     this->my_address.sin_family = AF_INET;
-    this->my_address.sin_addr.s_addr = inet_addr(localhost);
+    this->my_address.sin_addr.s_addr = inet_addr(myIP);
     this->my_address.sin_port = htons(myPort);
 
     // Bind port and own address for receiving/sending
@@ -19,7 +18,7 @@ bool Updator::setUpConnection(int myPort, int otherPort) {
 
     // Specify address and port for target (send or receive)
     this->other_address.sin_family = AF_INET;
-    this->other_address.sin_addr.s_addr = inet_addr(localhost);
+    this->other_address.sin_addr.s_addr = inet_addr(unity);
     this->other_address.sin_port = htons(otherPort);
 
     return true;
@@ -77,29 +76,13 @@ void Communicator::getNewPCD() {
     }
 }
 
-bool Communicator::initializeFilter(FilterParams &params) {
-    std::ofstream initCloud = std::ofstream ("../data/frame_0.pcd");
-
+bool Communicator::initializeFilter(FilterParams &params, std::string initModel, std::string guessFile) {
     // Initialize the camera used for tracking
     this->camera.initializeKLDFilter(params);
-    socklen_t targetAddrLen = sizeof(this->cloudGrabber.other_address);
-    memset(this->buffer, 0, sizeof(buffer));
+    this->camera.setUpTracking(initModel);
+    this->camera.writePredictions(guessFile);
+    this->camera.save = true;
 
-    // Receive the first point cloud (blocking)
-    if ((recvfrom(this->cloudGrabber.mySocket, this->buffer, sizeof(this->buffer) - 1, 0, (struct sockaddr*)&this->cloudGrabber.other_address, &targetAddrLen)) <= 0) {
-        std::cout << "Could not receive the full point cloud successfully" << std::endl;
-        return false;
-    }
-
-    if (!initCloud.is_open()) {
-        std::cerr << "Could not write to file" << std::endl;
-        return false;
-    }
-
-    // KLD filter fully set up after given initial cloud
-    initCloud << buffer;
-    initCloud.flush();
-    this->camera.setUpTracking("../data/frame_0.pcd");
     this->running = true;
 
     return true;

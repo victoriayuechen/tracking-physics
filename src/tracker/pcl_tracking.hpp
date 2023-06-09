@@ -59,7 +59,6 @@ struct FilterParams {
 class BaseTracker {
 private:
     std::mutex trackingMutex;
-    std::ofstream truthOutput;
     std::ofstream guessOutput;
 
     static inline std::vector<double> initialNoiseMean = std::vector<double>(6, INITIAL_NOISE_MEAN);
@@ -70,7 +69,6 @@ private:
 
 protected:
     // Saving the resulting point cloud predictions
-    bool save;
     std::string outputDir;
     void savePointCloud();
 
@@ -93,6 +91,7 @@ public:
     // For managing the video frames
     long frameCount;
     long frameMax;
+    bool save;
 
     // Filtering applied at each frame
     void cloudCallBack(const pcl::PointCloud<RefPointType>::ConstPtr &cloud);
@@ -101,7 +100,7 @@ public:
     void initializeKLDFilter(FilterParams& inputParams);
     void setUpTracking(const std::string& modelLoc);
     void setMaxFrame(long maxFrame);
-    void writePredictions(std::string& truthFile, std::string& guessFile);
+    void writePredictions(std::string& guessFile);
     pcl::PointXYZ getPredictedCentroid();
     std::string getResult();
 };

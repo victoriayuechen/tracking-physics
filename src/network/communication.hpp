@@ -7,19 +7,21 @@
 #include "../tracker/pcl_tracking.hpp"
 
 // BUFFER is for receiving PCDs and MESSAGE is for sending position updates
-#define BUFFER_SIZE 30000
+#define BUFFER_SIZE 40000
 #define MESSAGE_SIZE 20
 
 // PCL sends updates here
 #define POS_PCL 8080
 // Unity grabs updates from here
-#define POS_UNITY 8081
+#define POS_UNITY 8080
 // PCL grabs clouds from here
-#define PCD_PCL 8082
+#define PCD_PCL 8081
 // Unity sends clouds here
-#define PCD_UNITY 8083
+#define PCD_UNITY 8081
 // The IP used by all
-#define localhost "127.0.0.1"
+#define myIP "172.18.135.177"
+// The IP used by windows
+#define unity "172.18.128.1"
 
 /**
  * Class for setting up communication endpoint with Unity
@@ -50,7 +52,7 @@ public:
     void setUpCommunication();
     void sendPosUpdates();
     void getNewPCD();
-    bool initializeFilter(FilterParams& params);
+    bool initializeFilter(FilterParams &params, std::string initModel, std::string guessFile);
     void run();
     void stop();
 };

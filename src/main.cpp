@@ -5,7 +5,7 @@ int main() {
     FilterParams params = {
             0.02,
             2000,
-            0.01,
+            0.00999,
             0.99,
             0.02,
             0.1,
@@ -15,20 +15,20 @@ int main() {
 
     //  File directories to use
     bool save = true;
-    std::string experiment = "suzanne-true";
+    std::string experiment = "small-test";
     std::string targetModel = "";
     std::string truthFileName = "../analysis/full-model/truth-partial.txt";
-    std::string guessFileName = "../analysis/full-model/guess-partial-2000.txt";
+    std::string guessFileName = "../analysis/full-model/guess-partial-100frames.txt";
 
     // Maximum number of frames that are processed
-    long maxFrames = 500;
+    long maxFrames = 100;
 
     // Start up the tracker
     VirtualCamera tracker = VirtualCamera();
     tracker.initializeCamera(maxFrames, save);
     tracker.initializeKLDFilter(params);
     tracker.setUpTracking("../tests/suzanne2000.pcd");
-    tracker.writePredictions(truthFileName, guessFileName);
+    tracker.writePredictions(guessFileName);
 
     // Load all frames 
     pcl::PointCloud<RefPointType>::Ptr cloud (new pcl::PointCloud<RefPointType>);
