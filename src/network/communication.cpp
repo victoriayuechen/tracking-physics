@@ -63,7 +63,7 @@ void Communicator::getNewPCD() {
         }
 
         // Write PCD to file and continue tracking
-        std::string fileName = "../data/frame_" + std::to_string(this->camera.frameCount) + ".pcd";
+        std::string fileName = "../data/playback/frame_" + std::to_string(this->camera.frameCount) + ".pcd";
         std::ofstream pcdFile = std::ofstream(fileName);
         pcdFile << buffer;
         pcdFile.flush(); // TODO: check if there is a better way

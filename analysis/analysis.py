@@ -6,7 +6,7 @@ import numpy as np
 # Find the experiment type 
 experiment_type = sys.argv[1]
 truth = pd.read_csv('full-model/true-pos.txt', delimiter=',').to_numpy()
-guess_1000 = pd.read_csv('full-model/guess-partial-2000.txt', delimiter=',').to_numpy()
+guess_1000 = pd.read_csv('full-model/guess-partial-newframes2.txt', delimiter=',').to_numpy()
 
 # # Euclidean distance between the centroids
 # dist_1000 = np.linalg.norm((truth - guess_1000), axis=1)

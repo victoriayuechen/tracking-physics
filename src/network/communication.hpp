@@ -19,9 +19,9 @@
 // Unity sends clouds here
 #define PCD_UNITY 8081
 // The IP used by all
-#define myIP "172.18.135.177"
+#define myIP "172.22.78.131"
 // The IP used by windows
-#define unity "172.18.128.1"
+#define unity "172.22.64.1"
 
 /**
  * Class for setting up communication endpoint with Unity

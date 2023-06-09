@@ -5,7 +5,7 @@ int main() {
     FilterParams params = {
             0.02,
             2000,
-            0.00999,
+            0.005,
             0.99,
             0.02,
             0.1,
@@ -18,10 +18,10 @@ int main() {
     std::string experiment = "small-test";
     std::string targetModel = "";
     std::string truthFileName = "../analysis/full-model/truth-partial.txt";
-    std::string guessFileName = "../analysis/full-model/guess-partial-100frames.txt";
+    std::string guessFileName = "../analysis/full-model/guess-partial-newframes2.txt";
 
     // Maximum number of frames that are processed
-    long maxFrames = 100;
+    long maxFrames = 500;
 
     // Start up the tracker
     VirtualCamera tracker = VirtualCamera();
