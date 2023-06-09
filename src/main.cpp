@@ -3,10 +3,10 @@
 int main() {
     // Variables used for tracker
     // starting variable 0.02
-    float downSampleSize = 0.0f;
-    int particleCount = 700;
+    float downSampleSize = 0.02f;
+    int particleCount = 1000;
     // Initial variance = 0.01
-    double variance = 0.005;
+    double variance = 0.01;
     float delta = 0.99f;
     float epsilon = 0.02f;
     float binSize = 0.1f;
@@ -14,10 +14,10 @@ int main() {
 
     //  File directories to use
     std::string resultDir = ".."; // not used as of now
-    std::string experiment = "scale-x-y-axis";
-    std::string targetModel = "monkey";
-    std::string truthFileName = "../analysis/results/truth-monkey-scale-x-y-axis.txt";
-    std::string guessFileName = "../analysis/results/guess-monkey-scale-x-y-axis.txt";
+    std::string experiment = "static";
+    std::string targetModel = "cube";
+    std::string truthFileName = "../analysis/results/static.txt";
+    std::string guessFileName = "../analysis/results/static-guess.txt";
 
     // Maximum number of frames that are processed
     long maxFrames = 1000;

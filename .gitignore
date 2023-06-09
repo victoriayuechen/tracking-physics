@@ -3,5 +3,6 @@ build/
 .idea/
 cmake-build-debug/
 data/
+analysis/
 vid_dyn_move/
-.png
+*.png
