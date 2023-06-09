@@ -4,5 +4,6 @@ build/
 cmake-build-debug/
 data/
 analysis/
+tests/
 vid_dyn_move/
 *.png

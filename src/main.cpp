@@ -1,34 +1,34 @@
-#include "pcl_tracking.hpp"
+#include "tracker/pcl_tracking.hpp"
 
 int main() {
-    // Variables used for tracker
-    // starting variable 0.02
-    float downSampleSize = 0.02f;
-    int particleCount = 1000;
-    // Initial variance = 0.01
-    double variance = 0.01;
-    float delta = 0.99f;
-    float epsilon = 0.02f;
-    float binSize = 0.1f;
-    bool save = true;
+    // Parameters for the filter
+    FilterParams params = {
+            0.02,
+            2000,
+            0.00999,
+            0.99,
+            0.02,
+            0.1,
+            0.10,
+            false
+    };
 
     //  File directories to use
-    std::string resultDir = ".."; // not used as of now
-    std::string experiment = "static";
-    std::string targetModel = "cube";
-    std::string truthFileName = "../analysis/results/static.txt";
-    std::string guessFileName = "../analysis/results/static-guess.txt";
+    bool save = true;
+    std::string experiment = "small-test";
+    std::string targetModel = "";
+    std::string truthFileName = "../analysis/full-model/truth-partial.txt";
+    std::string guessFileName = "../analysis/full-model/guess-partial-100frames.txt";
 
     // Maximum number of frames that are processed
-    long maxFrames = 1000;
+    long maxFrames = 100;
 
     // Start up the tracker
     VirtualCamera tracker = VirtualCamera();
-    tracker.initializeCamera(resultDir, maxFrames, save);
-    tracker.setDownsampleSize(downSampleSize);
-    //tracker.setUpTracking("../tests/" + experiment + targetModel + "/frame_0.pcd", particleCount, variance, delta, epsilon, binSize);
-    tracker.setUpTracking("../data/frame_0.pcd", particleCount, variance, delta, epsilon, binSize);
-    tracker.writePredictions(truthFileName, guessFileName);
+    tracker.initializeCamera(maxFrames, save);
+    tracker.initializeKLDFilter(params);
+    tracker.setUpTracking("../tests/suzanne2000.pcd");
+    tracker.writePredictions(guessFileName);
 
     // Load all frames 
     pcl::PointCloud<RefPointType>::Ptr cloud (new pcl::PointCloud<RefPointType>);
@@ -48,7 +48,7 @@ int main() {
     }
 
     // Print elapsed tracking time for now. Might be nicer to save to csv file later.
-    printf ("Setup time: %f ms, Tracking time: %f ms, Total time: %f ms for %d particles and %ld frames\n", tracker.setupTime, tracker.trackingTime, tracker.setupTime + tracker.trackingTime, particleCount, maxFrames);
+    printf ("Setup time: %f ms, Tracking time: %f ms, Total time: %f ms for %d particles and %ld frames\n", tracker.setupTime, tracker.trackingTime, tracker.setupTime + tracker.trackingTime, params.particleCount, maxFrames);
     printf ("That is an average of %f ms per frame\n", (tracker.setupTime + tracker.trackingTime) / maxFrames);
 
     return 0;
