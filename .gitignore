@@ -5,3 +5,4 @@ cmake-build-debug/
 data/
 vid_dyn_move/
 .png
+experiments/

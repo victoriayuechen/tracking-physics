@@ -187,7 +187,7 @@ void BaseTracker::savePointCloud() {
     Particle state = this->tracker->getResult();
     {
         std::string out = std::to_string(state.x) + "," + std::to_string(state.y) + "," + std::to_string(state.z) + "\n";
-        std::cout << "Prediction: " << out << std::endl;
+       // std::cout << "Prediction: " << out << std::endl;
         this->guessOutput << out;
     }
 }

@@ -18,7 +18,7 @@
 #define PCD_PCL 8081
 // Unity sends clouds here
 #define PCD_UNITY 8081
-// The IP used by all
+// The IP of the current program
 #define myIP "172.22.78.131"
 // The IP used by windows
 #define unity "172.22.64.1"
@@ -46,7 +46,7 @@ private:
     VirtualCamera camera;
     Updator cloudGrabber;
     Updator posUpdator;
-    bool running;
+    bool running = true;
     char buffer[BUFFER_SIZE];
 public:
     void setUpCommunication();

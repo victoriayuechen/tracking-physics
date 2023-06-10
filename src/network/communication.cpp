@@ -53,7 +53,8 @@ void Communicator::sendPosUpdates() {
 
 void Communicator::getNewPCD() {
     socklen_t targetAddrLen = sizeof(this->cloudGrabber.other_address);
-
+    std::cout << "in getting new PCD" << std::endl; 
+    
     while (this->running) {
         memset(this->buffer, 0, sizeof(this->buffer));
         pcl::PointCloud<RefPointType>::Ptr cloud (new pcl::PointCloud<RefPointType>);
@@ -67,6 +68,8 @@ void Communicator::getNewPCD() {
         std::ofstream pcdFile = std::ofstream(fileName);
         pcdFile << buffer;
         pcdFile.flush(); // TODO: check if there is a better way
+
+        std::cout << "New Message" << std::endl; 
 
         if (pcl::io::loadPCDFile<RefPointType> (fileName, *cloud) == -1) {
             PCL_ERROR ("Could not read PCD file \n");
