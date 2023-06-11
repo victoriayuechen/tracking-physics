@@ -59,10 +59,10 @@ int run_experiment(double variance, int numParticles, float downSampleLevel, int
 
     //  File directories to use
     bool save = true;
-    std::string guessFileName = "../analysis/experiment-full/zigzag-" + std::to_string(count) + ".txt";
+    std::string guessFileName = "../analysis/experiment-full/acceleration-" + std::to_string(count) + ".txt";
 
     // Maximum number of frames that are processed
-    long maxFrames = 900;
+    long maxFrames = 600;
 
     // Start up the tracker
     VirtualCamera tracker = VirtualCamera();
@@ -73,7 +73,7 @@ int run_experiment(double variance, int numParticles, float downSampleLevel, int
 
     // Load all frames 
     pcl::PointCloud<RefPointType>::Ptr cloud (new pcl::PointCloud<RefPointType>);
-    std::string fileNames = "../experiments/zigzag/frame_";
+    std::string fileNames = "../experiments/acceleration/frame_";
 
     while (tracker.frameCount < maxFrames) {
         if (pcl::io::loadPCDFile<RefPointType> ((fileNames + std::to_string(tracker.frameCount) + ".pcd"), *cloud) == -1) {
@@ -87,10 +87,10 @@ int run_experiment(double variance, int numParticles, float downSampleLevel, int
 }
 
 int batchExperiment() {
-    std::vector<double> variance = { 0.001, 0.005, 0.05, 0.10 };
+    std::vector<double> variance = { 0.08 };
     std::vector<int> numParticles = { 500, 1000, 2000, 3000 };
     std::vector<float> downSampleLevel = { 0.01f, 0.02f, 0.06f, 0.1f };
-    int count = 1;
+    int count = 4;
 
     for (double v : variance) {
         run_experiment(v, 2000, 0.02f, count);
