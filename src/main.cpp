@@ -59,10 +59,10 @@ int run_experiment(double variance, int numParticles, float downSampleLevel, int
 
     //  File directories to use
     bool save = true;
-    std::string guessFileName = "../analysis/experiment-full/acceleration-" + std::to_string(count) + ".txt";
+    std::string guessFileName = "../analysis/experiment-full/zigzag-" + std::to_string(count) + ".txt";
 
     // Maximum number of frames that are processed
-    long maxFrames = 600;
+    long maxFrames = 900;
 
     // Start up the tracker
     VirtualCamera tracker = VirtualCamera();
@@ -73,7 +73,7 @@ int run_experiment(double variance, int numParticles, float downSampleLevel, int
 
     // Load all frames 
     pcl::PointCloud<RefPointType>::Ptr cloud (new pcl::PointCloud<RefPointType>);
-    std::string fileNames = "../experiments/acceleration/frame_";
+    std::string fileNames = "../experiments/zigzag/frame_";
 
     while (tracker.frameCount < maxFrames) {
         if (pcl::io::loadPCDFile<RefPointType> ((fileNames + std::to_string(tracker.frameCount) + ".pcd"), *cloud) == -1) {
@@ -90,25 +90,25 @@ int batchExperiment() {
     std::vector<double> variance = { 0.08 };
     std::vector<int> numParticles = { 500, 1000, 2000, 3000 };
     std::vector<float> downSampleLevel = { 0.01f, 0.02f, 0.06f, 0.1f };
-    int count = 4;
+    int count = 5;
 
-    for (double v : variance) {
-        run_experiment(v, 2000, 0.02f, count);
-        std::cout << "Completed experiment " << count << " / 12" << std::endl;
-        count++;
-    }
+    // for (double v : variance) {
+    //     run_experiment(v, 2000, 0.02f, count);
+    //     std::cout << "Completed experiment " << count << " / 12" << std::endl;
+    //     count++;
+    // }
 
     for (int n : numParticles) {
-        run_experiment(0.0025, n, 0.02f, count);
+        run_experiment(0.008, n, 0.02f, count);
         std::cout << "Completed experiment " << count << " / 12" << std::endl;
         count++;
     }
 
-    for (float d : downSampleLevel) {
-        run_experiment(0.0025, 2000, d, count);
-        std::cout << "Completed experiment " << count << " / 12" << std::endl;
-        count++;
-    }
+    // for (float d : downSampleLevel) {
+    //     run_experiment(0.08, 2000, d, count);
+    //     std::cout << "Completed experiment " << count << " / 12" << std::endl;
+    //     count++;
+    // }
 
     return 0; 
 }
