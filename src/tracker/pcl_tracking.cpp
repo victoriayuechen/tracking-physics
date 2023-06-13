@@ -212,7 +212,6 @@ pcl::PointXYZ BaseTracker::getPredictedCentroid() {
 
 // Sets the files in which to write the predictions and truth values
 void BaseTracker::writePredictions(std::string &guessFile) {
-    this->save = true; 
     this->guessOutput.open(guessFile);
 
     if (!guessOutput.is_open()) {

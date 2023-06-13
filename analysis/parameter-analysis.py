@@ -9,7 +9,13 @@ plt.rcParams.update({
     "font.serif": [],
     # Use specific cursive fonts.
     "font.cursive": ["Comic Neue", "Comic Sans MS"],
-}) 
+})
+
+from mpltools import style
+from mpltools import layout
+plt.style.use('ggplot')
+
+
 import numpy as np
 
 # Find the experiment type 
@@ -30,7 +36,7 @@ xs = np.linspace(0, 9, len(truth))
 
 plt.plot(xs, truth[:, 0], label="Ground Truth", color='black', linewidth=2.0)
 for i in range(len(data)):
-    plt.plot(xs, data[i], label='{} = {}'.format(experiment_type, parameters[i]), linestyle='--', alpha=0.7, color=color_palette[i])
+    plt.plot(xs, data[i], label='{} = {}'.format(experiment_type, parameters[i]), linestyle='--', alpha=0.7)
 
 plt.ylabel('X-coordinate')
 plt.xlabel('Time [s]')

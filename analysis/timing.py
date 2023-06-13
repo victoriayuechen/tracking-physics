@@ -1,30 +1,43 @@
 import sys
 import pandas as pd
-import matplotlib.pyplot as plt 
+import matplotlib
+matplotlib.use('pgf')
+import matplotlib.pyplot as plt
+plt.rcParams.update({
+    "font.family": "serif",
+    # Use LaTeX default serif font.
+    "font.serif": [],
+    # Use specific cursive fonts.
+    "font.cursive": ["Comic Neue", "Comic Sans MS"],
+})
+
 import numpy as np
 
-tracking_time_1 = pd.read_csv('results/timing-ds-1.txt', delimiter=',').to_numpy() 
-tracking_time_2 = pd.read_csv('results/timing-ds-2.txt', delimiter=',').to_numpy() 
-tracking_time_3 = pd.read_csv('results/timing-ds-3.txt', delimiter=',').to_numpy() 
-tracking_time_4 = pd.read_csv('results/timing-ds-4.txt', delimiter=',').to_numpy() 
-tracking_time_5 = pd.read_csv('results/timing-ds-5.txt', delimiter=',').to_numpy() 
-actual_time = np.ones(len(tracking_time_1)) * (1 / 60)
-ds_level = [0.00, 0.01, 0.04, 0.08, 0.10]
+from mpltools import style
+from mpltools import layout
+plt.style.use('seaborn-v0_8-whitegrid')
 
-times = [tracking_time_1, tracking_time_2, tracking_time_3, tracking_time_4, tracking_time_5]
-for i in range(len(ds_level)):
-    plot_tracking = np.cumsum((1 / 1000) * times[i])
-    plt.plot(range(0, len(plot_tracking)), plot_tracking, label='Tracking Time - Downsample = {ds:.3f}'.format(ds=ds_level[i]))
-    plot_tracking[0] = 0 
+tracking_time_1 = pd.read_csv('experiment-full/timing-1.txt', delimiter=',').to_numpy() 
+tracking_time_2 = pd.read_csv('experiment-full/timing-2.txt', delimiter=',').to_numpy() 
+tracking_time_3 = pd.read_csv('experiment-full/timing-3.txt', delimiter=',').to_numpy() 
+tracking_time_4 = pd.read_csv('experiment-full/timing-4.txt', delimiter=',').to_numpy() 
+tracking_time_5 = pd.read_csv('experiment-full/timing-5.txt', delimiter=',').to_numpy() 
+tracking_time_6 = pd.read_csv('experiment-full/timing-6.txt', delimiter=',').to_numpy() 
+param = [300, 800, 1000, 1500, 2000, 3000]
 
-plot_actual = np.cumsum(actual_time)
-plot_actual[0] = 0 
+times = [tracking_time_1, tracking_time_2, tracking_time_3, tracking_time_4, tracking_time_5, tracking_time_6]
+ys = []
+for i in range(len(times)):
+    ys.append(np.sum(times[i]))
 
-plt.plot(range(0, len(actual_time)), plot_actual, label='Frame Time')
+plt.plot(param, ys, marker='o')
 
-plt.ylabel('Time (s)')
-plt.xlabel('Number of frames processed')
-plt.title('Comparison with frame time and tracking time')
+plt.ylabel('Time [s]')
+plt.xlabel('Number of Particles')
+plt.xlim(left=0)
+plt.ylim(bottom=0)
+plt.title('Particle Count and Computational Efficiency')
 plt.legend()
-plt.savefig('exp-results/timing-ds.png')
+plt.savefig('report-plots/pNo-Time.pgf', format='pgf')
+plt.savefig('report-plots/svg/pNo-Time.svg')
 plt.show()
