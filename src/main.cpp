@@ -20,7 +20,7 @@ int time_experiments(int numParticles, int count) {
     timingFile.open( "../analysis/experiment-full/timing-" + std::to_string(count) + ".txt"); 
 
     // Maximum number of frames that are processed
-    long maxFrames = 900;
+    long maxFrames = 600;
 
     // Start up the tracker
     VirtualCamera tracker = VirtualCamera();
@@ -68,10 +68,10 @@ int run_experiment(double variance, int numParticles, float downSampleLevel, int
 
     //  File directories to use
     bool save = true;
-    std::string guessFileName = "../analysis/experiment-full/zigzag-" + std::to_string(count) + ".txt";
+    std::string guessFileName = "../analysis/experiment-full/translation-" + std::to_string(count) + ".txt";
 
     // Maximum number of frames that are processed
-    long maxFrames = 900;
+    long maxFrames = 600;
 
     // Start up the tracker
     VirtualCamera tracker = VirtualCamera();
@@ -82,7 +82,7 @@ int run_experiment(double variance, int numParticles, float downSampleLevel, int
 
     // Load all frames 
     pcl::PointCloud<RefPointType>::Ptr cloud (new pcl::PointCloud<RefPointType>);
-    std::string fileNames = "../experiments/zigzag/frame_";
+    std::string fileNames = "../experiments/translation/frame_";
 
     while (tracker.frameCount < maxFrames) {
         if (pcl::io::loadPCDFile<RefPointType> ((fileNames + std::to_string(tracker.frameCount) + ".pcd"), *cloud) == -1) {
@@ -129,6 +129,6 @@ int batchExperiment() {
 }
 
 int main() {
-    batchExperiment();
-    // run_experiment(0.005, 2000, 0.02f, 222);
+    // batchExperiment();
+    run_experiment(0.005, 2000, 0.02f, 222);
 }

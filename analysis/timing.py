@@ -15,7 +15,6 @@ import numpy as np
 
 from mpltools import style
 from mpltools import layout
-plt.style.use('seaborn-v0_8-whitegrid')
 
 tracking_time_1 = pd.read_csv('experiment-full/timing-1.txt', delimiter=',').to_numpy() 
 tracking_time_2 = pd.read_csv('experiment-full/timing-2.txt', delimiter=',').to_numpy() 
@@ -30,7 +29,7 @@ ys = []
 for i in range(len(times)):
     ys.append(np.sum(times[i]))
 
-plt.plot(param, ys, marker='o')
+plt.plot(param, ys, marker='o', c='royalblue')
 
 plt.ylabel('Time [s]')
 plt.xlabel('Number of Particles')
