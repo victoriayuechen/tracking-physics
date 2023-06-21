@@ -19,8 +19,10 @@ int time_experiments(int numParticles, int count) {
     std::ofstream timingFile; 
     timingFile.open( "../analysis/experiment-full/timing-" + std::to_string(count) + ".txt"); 
 
+    std::cout << "in 1" << std::endl; 
+
     // Maximum number of frames that are processed
-    long maxFrames = 600;
+    long maxFrames = 900;
 
     // Start up the tracker
     VirtualCamera tracker = VirtualCamera();
@@ -28,11 +30,14 @@ int time_experiments(int numParticles, int count) {
     tracker.initializeKLDFilter(params);
     tracker.setUpTracking("../tests/suzanne2000.pcd");
 
+    std::cout << "in 2" << std::endl; 
+
     // Load all frames 
     pcl::PointCloud<RefPointType>::Ptr cloud (new pcl::PointCloud<RefPointType>);
     std::string fileNames = "../experiments/translation/frame_";
     std::chrono::high_resolution_clock::time_point startTime, endTime;
 
+    std::cout << "in 3" << std::endl; 
 
     while (tracker.frameCount < maxFrames) {
         if (pcl::io::loadPCDFile<RefPointType> ((fileNames + std::to_string(tracker.frameCount) + ".pcd"), *cloud) == -1) {
@@ -42,6 +47,8 @@ int time_experiments(int numParticles, int count) {
         startTime = std::chrono::high_resolution_clock::now();
         tracker.cloudCallBack(cloud);
         endTime = std::chrono::high_resolution_clock::now();
+
+        std::cout << " ==== " << tracker.frameCount << " ==== " << std::endl; 
         
         // Save timing in (ms)
         auto elapsedSeconds = std::chrono::duration<double, std::milli>(endTime - startTime).count();
@@ -123,6 +130,7 @@ int batchExperiment() {
 }
 
 int main() {
-    batchExperiment();
-    // run_experiment(0.005, 2000, 0.02f, 222);
+    // batchExperiment();
+    // run_experiment(0.08, 100, 0.02f, 100);
+    time_experiments(100, 100); 
 }
