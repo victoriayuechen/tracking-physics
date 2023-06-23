@@ -11,30 +11,39 @@ params = {'text.usetex' : True,
 plt.rcParams.update(params) 
 fig = plt.figure()
 
-tracking_time_1 = pd.read_csv('experiment-full/timing-1.txt', delimiter=',').to_numpy() 
-tracking_time_2 = pd.read_csv('experiment-full/timing-2.txt', delimiter=',').to_numpy() 
-tracking_time_3 = pd.read_csv('experiment-full/timing-3.txt', delimiter=',').to_numpy() 
-tracking_time_4 = pd.read_csv('experiment-full/timing-4.txt', delimiter=',').to_numpy() 
-tracking_time_5 = pd.read_csv('experiment-full/timing-5.txt', delimiter=',').to_numpy() # this one
-tracking_time_6 = pd.read_csv('experiment-full/timing-6.txt', delimiter=',').to_numpy() 
+translation = []
+acceleration = []
+sinwave = []
+
 param = [300, 800, 1000, 1500, 2000, 3000]
+for i in range(1, 7):
+    translation.append(pd.read_csv('experiment-full/timing-{num}.txt'.format(num=i), delimiter=',').to_numpy())
+    acceleration.append(pd.read_csv('experiment-full/timing-acc-{num}.txt'.format(num=i), delimiter=',').to_numpy())
+    sinwave.append(pd.read_csv('experiment-full/timing-sw-{num}.txt'.format(num=i), delimiter=',').to_numpy())
 
-times = [tracking_time_1, tracking_time_2, tracking_time_3, tracking_time_4, tracking_time_5, tracking_time_6]
-ys = []
-for i in range(len(times)):
-    ys.append(np.sum(times[i]))
+ys_translation = []
+ys_acceleration = []
+ys_sinwave = []
 
-plt.plot(param, ys, marker='o', c='royalblue')
+for i in range(len(translation)):
+    ys_translation.append(np.mean(translation[i]))
+    ys_acceleration.append(np.mean(acceleration[i]))
+    ys_sinwave.append(np.mean(sinwave[i]))
 
-plt.ylabel('Time [ms]')
+plt.plot(param, ys_acceleration, marker='o', c='darkorange', label='Acceleration')
+plt.plot(param, ys_translation, marker='o', c='royalblue', label='Translation')
+plt.plot(param, ys_sinwave, marker='o', c='crimson', label='Sin Wave')
+
+plt.ylabel('Average Frame Processing Time [ms]')
 plt.xlabel('Number of Particles')
 plt.xlim(left=0)
 plt.ylim(bottom=0)
-plt.title('Particle Count and Computational Efficiency')
+plt.legend(loc=2, prop={'size': 12})
+plt.title('Particle Count and Average Processing Time')
 
 # Save the file 
 fig.set_size_inches(7.2, 5)
-plt.savefig('report-plots/svg/pNo-Time.svg', dpi=1000, bbox_inches='tight')
+plt.savefig('report-plots/pNo-Time.svg', dpi=1000, bbox_inches='tight')
 plt.show()
 
 # # Frame rate of pcl vs. unity
