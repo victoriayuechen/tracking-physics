@@ -35,7 +35,7 @@ for i in range(1, 6):
     # For all the particle counts 
     for j in range(1, 6):
         res = pd.read_csv('experiment-full/res{resN}-{num}.txt'.format(resN=i, num=j), delimiter=',').to_numpy()[:, 0]
-        res = np.linalg.norm(res - true[:len(res)])
+        res = np.mean(np.abs(res - true[:len(res)]))
         accuracies[i - 1].append(res)
 
 # For each resolution of the camera 
@@ -45,11 +45,11 @@ for i in range(1, 6):
         res = pd.read_csv('experiment-full/res{resN}-timing-{num}.txt'.format(resN=i, num=j), delimiter=',').to_numpy()[:, 0]
         times[i - 1].append(np.mean(res))
 
-plt.plot(res1_accuracy, res1_time, label="30 x 40 Camera", marker='o', c='royalblue')
-plt.plot(res2_accuracy, res2_time, label="40 x 50 Camera", marker='o', c='darkorange')
-plt.plot(res3_accuracy, res3_time, label="50 x 60 Camera", marker='o', c='crimson')
-plt.plot(res4_accuracy, res4_time, label="60 x 70 Camera", marker='o', c='limegreen')
-plt.plot(res5_accuracy, res5_time, label="70 x 80 Camera", marker='o', c='violet')
+plt.plot(res1_time, res1_accuracy, label="30 x 40 Camera", marker='o', c='royalblue')
+plt.plot(res2_time, res2_accuracy, label="40 x 50 Camera", marker='o', c='darkorange')
+plt.plot(res3_time, res3_accuracy, label="50 x 60 Camera", marker='o', c='crimson')
+plt.plot(res4_time, res4_accuracy, label="60 x 70 Camera", marker='o', c='limegreen')
+plt.plot(res5_time, res5_accuracy, label="70 x 80 Camera", marker='o', c='violet')
 
 plt.ylabel('Average L2 Norm Error')
 plt.xlabel('Average Frame Processing Time [ms]')

@@ -17,8 +17,8 @@ int time_experiments(int numParticles, int count) {
     //  File directories to use
     bool save = true;
     std::ofstream timingFile; 
-    std::string guessFileName = "../analysis/experiment-full/res3-" + std::to_string(count) + ".txt"; 
-    std::string timeFileName = "../analysis/experiment-full/res3-timing-" + std::to_string(count) + ".txt"; 
+    std::string guessFileName = "../analysis/experiment-full/res2-" + std::to_string(count) + ".txt"; 
+    std::string timeFileName = "../analysis/experiment-full/res2-timing-" + std::to_string(count) + ".txt"; 
     timingFile.open(timeFileName); 
 
     // Maximum number of frames that are processed
@@ -33,7 +33,7 @@ int time_experiments(int numParticles, int count) {
 
     // Load all frames 
     pcl::PointCloud<RefPointType>::Ptr cloud (new pcl::PointCloud<RefPointType>);
-    std::string fileNames = "../experiments/res3/frame_";
+    std::string fileNames = "../experiments/res2/frame_";
     std::chrono::high_resolution_clock::time_point startTime, endTime;
 
     while (tracker.frameCount < maxFrames) {
