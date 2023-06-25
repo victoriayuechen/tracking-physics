@@ -1,2 +1,2 @@
 # Tracking with IMU 
-in progress
+- documentation and clean up coming soon.

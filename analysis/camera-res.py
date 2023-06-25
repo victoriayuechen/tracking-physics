@@ -58,7 +58,7 @@ plt.setp(bplot2['caps'], color='green')
 
 ax.yaxis.grid(True)
 ax.set_xlabel('Camera Resolution')
-ax.set_ylabel('L2 Norm')
+ax.set_ylabel('L2 Norm Error')
 ax.set_title('Comparison with Camera Resolution and Accuracy')
 
 ax.yaxis.label.set_color('royalblue')

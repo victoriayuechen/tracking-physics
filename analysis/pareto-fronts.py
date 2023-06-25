@@ -36,19 +36,18 @@ def get_accuracy(res):
 # Gets the accuracy line for a camera with resolution `res`
 def get_times(res):
     res_time = np.zeros((6, 5))
-    print(res)
+
     # For each runs  
     for i in range(1, 6):
         # For all the particle counts 
         for j in range(1, 6):
-            print("{i1} {j1}".format(i1=i, j1=j))
             fileName = 'experiment-full/runs/{runCount}-res{resN}-timing-{num}.txt'.format(runCount=i, resN=res, num=j)
-            times = pd.read_csv(fileName, delimiter=',').to_numpy()
+            times = pd.read_csv(fileName).to_numpy()
             res_time[i, j - 1] = np.mean(times)
     
     # From the run without the correct names 
     for j in range(1, 6):
-        times = pd.read_csv('experiment-full/res{resN}-timing-{num}.txt'.format(resN=res, num=j), delimiter=',').to_numpy()
+        times = pd.read_csv('experiment-full/res{resN}-timing-{num}.txt'.format(resN=res, num=j)).to_numpy()
         res_time[0, j - 1] = np.mean(times)
     
     return np.mean(res_time, axis=0)
@@ -61,14 +60,16 @@ for i in range(1, 6):
     ys_accuracy = get_accuracy(i)
     plt.plot(xs_time, ys_accuracy, label=labels[i - 1], marker='o', c=colors[i - 1])
 
+plt.annotate('Increasing Particle Count',xy=(1280,1.4),xytext=(1100,1.5), arrowprops={}, ha='right')
+
 plt.ylabel('Average L2 Norm Error')
 plt.xlabel('Average Frame Processing Time [ms]')
 plt.xlim(left=0)
 plt.ylim(bottom=0)
-plt.title('Pareto Frontiers')
-plt.legend(loc=2, prop={'size': 12})
+plt.title('Trade-off between Accuracy and Time')
+plt.legend(loc=1, prop={'size': 12})
 
 # Save the file 
 fig.set_size_inches(7.2, 5)
-plt.savefig('report-plots/test-2.svg', dpi=1000, bbox_inches='tight')
+plt.savefig('report-plots/svg/tradeoffs.svg', dpi=1000, bbox_inches='tight')
 plt.show()
