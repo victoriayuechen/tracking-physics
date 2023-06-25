@@ -11,45 +11,55 @@ params = {'text.usetex' : True,
 plt.rcParams.update(params) 
 fig = plt.figure()
 
-res1_time = []
-res1_accuracy = []
-
-res2_time = []
-res2_accuracy = []
-
-res3_time = []
-res3_accuracy = []
-
-res4_time = []
-res4_accuracy = []
-
-res5_time = []
-res5_accuracy = []
-
+# Get the true positions
 true = pd.read_csv('experiment-full/true-translation.txt', delimiter=',').to_numpy()[:, 0]
-accuracies = [res1_accuracy, res2_accuracy, res3_accuracy, res4_accuracy, res5_accuracy]
-times = [res1_time, res2_time, res3_time, res4_time, res5_time]
 
-# For each resolution of the camera 
-for i in range(1, 6):
-    # For all the particle counts 
+# Gets the accuracy line for a camera with resolution `res`
+def get_accuracy(res):
+    res_acc = np.zeros((6, 5))
+
+    # For each runs  
+    for i in range(1, 6):
+        # For all the particle counts 
+        for j in range(1, 6):
+            predictions = pd.read_csv('experiment-full/runs/{runCount}-res{resN}-{num}.txt'.format(runCount=i, resN=res, num=j), delimiter=',').to_numpy()[:, 0]
+            res_acc[i, j - 1] = np.mean(np.abs(predictions - true[:len(predictions)]))
+    
+    # From the run without the correct names 
     for j in range(1, 6):
-        res = pd.read_csv('experiment-full/res{resN}-{num}.txt'.format(resN=i, num=j), delimiter=',').to_numpy()[:, 0]
-        res = np.mean(np.abs(res - true[:len(res)]))
-        accuracies[i - 1].append(res)
+        predictions = pd.read_csv('experiment-full/res{resN}-{num}.txt'.format(resN=res, num=j), delimiter=',').to_numpy()[:, 0]
+        res_acc[0, j - 1] = np.mean(np.abs(predictions - true[:len(predictions)]))
+    
+    return np.mean(res_acc, axis=0)
 
-# For each resolution of the camera 
-for i in range(1, 6):
-    # For all the particle counts 
+
+# Gets the accuracy line for a camera with resolution `res`
+def get_times(res):
+    res_time = np.zeros((6, 5))
+    print(res)
+    # For each runs  
+    for i in range(1, 6):
+        # For all the particle counts 
+        for j in range(1, 6):
+            print("{i1} {j1}".format(i1=i, j1=j))
+            fileName = 'experiment-full/runs/{runCount}-res{resN}-timing-{num}.txt'.format(runCount=i, resN=res, num=j)
+            times = pd.read_csv(fileName, delimiter=',').to_numpy()
+            res_time[i, j - 1] = np.mean(times)
+    
+    # From the run without the correct names 
     for j in range(1, 6):
-        res = pd.read_csv('experiment-full/res{resN}-timing-{num}.txt'.format(resN=i, num=j), delimiter=',').to_numpy()[:, 0]
-        times[i - 1].append(np.mean(res))
+        times = pd.read_csv('experiment-full/res{resN}-timing-{num}.txt'.format(resN=res, num=j), delimiter=',').to_numpy()
+        res_time[0, j - 1] = np.mean(times)
+    
+    return np.mean(res_time, axis=0)
 
-plt.plot(res1_time, res1_accuracy, label="30 x 40 Camera", marker='o', c='royalblue')
-plt.plot(res2_time, res2_accuracy, label="40 x 50 Camera", marker='o', c='darkorange')
-plt.plot(res3_time, res3_accuracy, label="50 x 60 Camera", marker='o', c='crimson')
-plt.plot(res4_time, res4_accuracy, label="60 x 70 Camera", marker='o', c='limegreen')
-plt.plot(res5_time, res5_accuracy, label="70 x 80 Camera", marker='o', c='violet')
+labels = ["30 x 40 Camera", "40 x 50 Camera", "50 x 60 Camera", "60 x 70 Camera", "70 x 80 Camera"]
+colors = ['royalblue', 'darkorange', 'crimson', 'limegreen', 'violet']
+
+for i in range(1, 6):
+    xs_time = get_times(i)
+    ys_accuracy = get_accuracy(i)
+    plt.plot(xs_time, ys_accuracy, label=labels[i - 1], marker='o', c=colors[i - 1])
 
 plt.ylabel('Average L2 Norm Error')
 plt.xlabel('Average Frame Processing Time [ms]')
@@ -60,5 +70,5 @@ plt.legend(loc=2, prop={'size': 12})
 
 # Save the file 
 fig.set_size_inches(7.2, 5)
-plt.savefig('report-plots/test.svg', dpi=1000, bbox_inches='tight')
+plt.savefig('report-plots/test-2.svg', dpi=1000, bbox_inches='tight')
 plt.show()
