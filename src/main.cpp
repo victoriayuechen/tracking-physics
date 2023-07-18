@@ -5,29 +5,29 @@ int main() {
     FilterParams params = {
             0.02,
             2000,
-            0.00999,
+            0.005,
             0.99,
             0.02,
             0.1,
             0.10,
-            false
+            true
     };
 
     //  File directories to use
     bool save = true;
-    std::string experiment = "small-test";
-    std::string targetModel = "";
-    std::string truthFileName = "../analysis/full-model/truth-partial.txt";
-    std::string guessFileName = "../analysis/full-model/guess-partial-100frames.txt";
+    std::string experiment = "translating-cube-1dof";
+    std::string targetModel = "cube";
+    std::string truthFileName = "../analysis/results/translating-1dof";
+    std::string guessFileName = "../analysis/results/translating-1dof-guess";
 
     // Maximum number of frames that are processed
-    long maxFrames = 100;
+    long maxFrames = 500;
 
     // Start up the tracker
     VirtualCamera tracker = VirtualCamera();
     tracker.initializeCamera(maxFrames, save);
     tracker.initializeKLDFilter(params);
-    tracker.setUpTracking("../tests/suzanne2000.pcd");
+    tracker.setUpTracking("../cube.pcd");
     tracker.writePredictions(guessFileName);
 
     // Load all frames 

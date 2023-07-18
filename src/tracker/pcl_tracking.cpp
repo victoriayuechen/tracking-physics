@@ -27,9 +27,28 @@ void BaseTracker::setMaxFrame(long maxFrame) {
 // Creates the vector of step covariances, according to the 6 DOF
 std::vector<double> getStepNoiseCovariance(double variance) {
     std::vector<double> defaultStepCovariance = std::vector<double>(6, variance);
-    defaultStepCovariance[3] *= 40;
-    defaultStepCovariance[4] *= 40;
-    defaultStepCovariance[5] *= 40;
+    
+    // 6 DoF
+    // Translation
+    // defaultStepCovariance[0] *= 1; // X
+    // defaultStepCovariance[1] *= 1; // Y
+    // defaultStepCovariance[2] *= 1; // Z
+    
+    // // Rotation
+    // defaultStepCovariance[3] *= 40; // Roll
+    // defaultStepCovariance[4] *= 40; // Pitch
+    // defaultStepCovariance[5] *= 40; // Yaw
+
+    // 1 Dof
+    // Translation
+    defaultStepCovariance[0] *= 1; // X
+    defaultStepCovariance[1] *= 0; // Y
+    defaultStepCovariance[2] *= 0; // Z
+    
+    // Rotation
+    defaultStepCovariance[3] *= 0; // Roll
+    defaultStepCovariance[4] *= 0; // Pitch
+    defaultStepCovariance[5] *= 0; // Yaw
 
     return defaultStepCovariance;
 }
@@ -201,6 +220,8 @@ void BaseTracker::savePointCloud() {
     // Gets the particle XYZRPY (centroid of particle cloud)
     Particle state = this->tracker->getResult();
     {
+        // std::string out = std::to_string(state.x) + "," + std::to_string(state.y) + "," + std::to_string(state.z) 
+        // + "," + std::to_string(state.roll) + "," + std::to_string(state.pitch) + "," + std::to_string(state.yaw) + "\n";
         std::string out = std::to_string(state.x) + "," + std::to_string(state.y) + "," + std::to_string(state.z) + "\n";
         std::cout << "Prediction: " << out << std::endl;
         this->guessOutput << out;
